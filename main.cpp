@@ -623,7 +623,6 @@ void parseFace(string line, string currentMaterialName) {
 			vertexIndices.push_back(stoi(sub_line[2]) - 1);
 		}
 		else {
-			//cout << "slash" << endl;
 
 
 
