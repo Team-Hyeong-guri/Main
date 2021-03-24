@@ -23,9 +23,9 @@ using namespace std;
 GLuint programID;
 GLuint VertexArrayID;
 
-string filename = "YuSample.obj";
+string filename = "PiggyBank.obj";
 string mtlpath; //mtl 파일명 저장.
-float scale = 0.003f;
+float scale = 0.3f;
 
 vector<GLuint>vertexIndices, texIndices, normalIndices;
 vector<glm::vec3>obj_vertices;
@@ -312,17 +312,17 @@ void calc_color() {
 		vertexInfo[i].normal_vec = glm::normalize(glm::vec3 (vertexInfo[i].normal_vec.x/normal_count ,
 			vertexInfo[i].normal_vec.y / normal_count, vertexInfo[i].normal_vec.z / normal_count));
 
-//		for (int j = 0; j < near_vertex_count; j++) {
-//			int first_face = (int)vertexInfo[i].near_face[j].x;
-//			int second_face = (int)vertexInfo[i].near_face[j].y;
+		for (int j = 0; j < near_vertex_count; j++) {
+			int first_face = (int)vertexInfo[i].near_face[j].x;
+			int second_face = (int)vertexInfo[i].near_face[j].y;
 //			
-//			calc_sin(i, j);
-//			
-//		}
-		for (int j = 0; j < vertexInfo[i].near_face_2.size(); j++) {
-			//cout << (vertexInfo[i].near_face_2[j]) << endl;
-			calc_sin2(i, vertexInfo[i].near_face_2[j]);
+			calc_sin(i, j);
+			
 		}
+		//for (int j = 0; j < vertexInfo[i].near_face_2.size(); j++) {
+			//cout << (vertexInfo[i].near_face_2[j]) << endl;
+		//	calc_sin2(i, vertexInfo[i].near_face_2[j]);
+		//}
 		//cout << vertexInfo[i].calc_count << endl;
 		vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);
 		vertexInfo[i].calc_curv = sqrt(1 - vertexInfo[i].calc_curv*vertexInfo[i].calc_curv);
