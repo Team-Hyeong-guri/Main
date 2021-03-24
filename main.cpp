@@ -23,9 +23,9 @@ using namespace std;
 GLuint programID;
 GLuint VertexArrayID;
 
-string filename = "PiggyBank.obj";
+string filename = "YuSample.obj";
 string mtlpath; //mtl 파일명 저장.
-float scale = 0.3f;
+float scale = 0.003f;
 
 vector<GLuint>vertexIndices, texIndices, normalIndices;
 vector<glm::vec3>obj_vertices;
@@ -224,6 +224,34 @@ void calc_sin(int num, int vertex) {
 
 
 };
+void calc_sin2(int num, int face) {
+	glm::vec3 normal = glm::normalize(vertexInfo[num].normal_vec);
+
+	int vertex_n1 = vertexIndices[(face - 1) * 3];
+	int vertex_n2 = vertexIndices[(face - 1) * 3 + 1];
+	int vertex_n3 = vertexIndices[(face - 1) * 3 + 2];
+
+	glm::vec3 vec2_1, vec3_1;
+	vec2_1 = obj_vertices[vertex_n2] - obj_vertices[vertex_n1];
+	vec3_1 = obj_vertices[vertex_n3] - obj_vertices[vertex_n1];
+
+	double vx = vec2_1.y*vec3_1.z - vec2_1.z*vec3_1.y;
+	double vy = vec2_1.z*vec3_1.x - vec2_1.x*vec3_1.z;
+	double vz = vec2_1.x*vec3_1.y - vec2_1.y*vec3_1.x;
+
+	glm::vec3 face_normal = glm::normalize(glm::vec3(vx, vy, vz));
+
+	double normal1 = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
+	double normal2 = sqrt(face_normal.x*face_normal.x + face_normal.y*face_normal.y
+		+ face_normal.z*face_normal.z);
+
+	
+
+
+
+	vertexInfo[num].calc_curv += glm::dot(normal, face_normal) / (normal1*normal2);
+	vertexInfo[num].calc_count++;
+};
 void calc_color() {
 	for (int i = 0; i < vertex_count; i++) {
 		int near_vertex_count = vertexInfo[i].near_vertex.size();
@@ -284,17 +312,24 @@ void calc_color() {
 		vertexInfo[i].normal_vec = glm::normalize(glm::vec3 (vertexInfo[i].normal_vec.x/normal_count ,
 			vertexInfo[i].normal_vec.y / normal_count, vertexInfo[i].normal_vec.z / normal_count));
 
-		for (int j = 0; j < near_vertex_count; j++) {
-			int first_face = (int)vertexInfo[i].near_face[j].x;
-			int second_face = (int)vertexInfo[i].near_face[j].y;
-			
-			calc_sin(i, j);
-			
+//		for (int j = 0; j < near_vertex_count; j++) {
+//			int first_face = (int)vertexInfo[i].near_face[j].x;
+//			int second_face = (int)vertexInfo[i].near_face[j].y;
+//			
+//			calc_sin(i, j);
+//			
+//		}
+		for (int j = 0; j < vertexInfo[i].near_face_2.size(); j++) {
+			//cout << (vertexInfo[i].near_face_2[j]) << endl;
+			calc_sin2(i, vertexInfo[i].near_face_2[j]);
 		}
 		//cout << vertexInfo[i].calc_count << endl;
 		vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);
+		vertexInfo[i].calc_curv = sqrt(1 - vertexInfo[i].calc_curv*vertexInfo[i].calc_curv);
+		//int a = int(vertexInfo[i].calc_curv*100);
+		vertexInfo[i].calc_curv = vertexInfo[i].calc_curv * 3;
 		//cout << vertexInfo[i].calc_curv << endl;
-		aColor.push_back(glm::vec3(0.,vertexInfo[i].calc_curv ,0.));
+		aColor.push_back(glm::vec3(vertexInfo[i].calc_curv,0.,0.));
 	}
 };
 void onReadMTLFile(string path) {
