@@ -1,0 +1,15 @@
+#version 400 core
+
+in vec3 vtxPosition;
+in vec3 a_Color;
+
+out vec3 v_Color;
+
+void main()
+{  
+
+   	v_Color = a_Color;
+
+	gl_Position = vec4(vtxPosition,1.0f);
+
+}
