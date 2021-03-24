@@ -15,23 +15,41 @@
 #include <GL/glut.h>
 #include<GL/freeglut.h>
 
-#define WINDOWSIZE 600
+#define WINDOW_HEIGHT 600
+#define WINDOW_WIDTH 600
 #define TO_RADIAN 0.01745329252f 
 
 using namespace std;
 
 GLuint programID;
+GLuint programID2; //박스 프로그램
 GLuint VertexArrayID;
 
-string filename = "YuSample.obj";
+string filename = "PiggyBank.obj";
 string mtlpath; //mtl 파일명 저장.
-float scale = 0.003f;
+float scale = 0.3f;
 
 vector<GLuint>vertexIndices, texIndices, normalIndices;
 vector<glm::vec3>obj_vertices;
 vector<glm::vec2>obj_texcoord;
 vector<glm::vec3>obj_normals;
 vector<glm::vec3>aColor;
+float box_vertices[12] = {
+	0.0f, 0.0f, 0.0f,
+	0.0f, 1.0f, 0.0f,
+	1.0f, 1.0f, 0.0f,
+	1.0f, 0.0f, 0.0f
+};
+GLuint vbo_box; //박스 위치 버퍼
+int mouseX;	// 마우스로 시점 이동시 전의 마우스좌표 저장  / 초기 설정 -1
+int mouseY;
+float savemouseX; // 박스 시작 위치 x
+float savemouseY; // 박스 시작 위치 y
+float varX; //박스 끝위치 x
+float varY; //박스 끝위치 y
+bool Holding = FALSE;
+
+
 struct Material
 {
 	glm::vec3 MTL_Kd; // Read diffuse
@@ -60,9 +78,6 @@ int first_f_check = 0; //처음 f를 읽었는지 체크
 int vertex_count = 0;
 int face_count = 0;
 
-
-int mouseX = -1;	// 마우스로 시점 이동시 전의 마우스좌표 저장  / 초기 설정 -1
-int mouseY = -1;
 int windowCheck;
 
 float maxX = 1.0f;
@@ -93,7 +108,7 @@ glm::mat4 normalMat = glm::mat4(1.0f);
 glm::vec3 lightPos = glm::vec3(10.0f, 10.0f, 10.0f);
 
 GLuint vbo[2];
-GLuint vao;
+GLuint vao[2];
 unsigned int ebo;
 
 void parseMtllib(string line); //mtl 파일명 저장.
@@ -893,6 +908,8 @@ void renderScene(void)
 
 	//define the size of point and draw a point.
 
+	glUseProgram(programID);
+
 	GLuint lightPosID = glGetUniformLocation(programID, "uLightPos");
 	glUniform3fv(lightPosID, 1, &lightPos[0]);
 
@@ -905,10 +922,19 @@ void renderScene(void)
 	GLuint projectID = glGetUniformLocation(programID, "projectmat");
 	glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat[0][0]);
 
-	glBindVertexArray(vao);
+	glBindVertexArray(vao[0]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glDrawElements(GL_TRIANGLES, vertexIndices.size(), GL_UNSIGNED_INT, (void*)0);
 	//glDrawArrays(GL_POINTS, 0, obj_vertices.size());
+
+	glUseProgram(programID2);
+
+	glBindVertexArray(vao[1]);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_box);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, box_vertices, GL_STATIC_DRAW);
+	GLuint vtxPosition2 = glGetAttribLocation(programID2, "vtxPosition");
+	glVertexAttribPointer(vtxPosition2, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+	glDrawArrays(GL_LINE_LOOP, 0, 4);
 
 	//Double buffer
 	glutSwapBuffers();
@@ -1008,7 +1034,7 @@ void myKeyboard(unsigned char key, int x, int y) {
 			projectmat = perspectiveMat;
 			updateViewmat();
 		}
-		else if (orthoOn = 1) {
+		else if (orthoOn == 1) {
 			maxX += 0.1f;
 			minX -= 0.1f;
 			maxY += 0.1f;
@@ -1061,31 +1087,78 @@ void myKeyboard(unsigned char key, int x, int y) {
 	glutPostRedisplay();
 
 }
-void myMouse(int x, int y) {
-	if (mouseX == -1) {	//마우스 위치 초기화
+void myMouseClick(GLint Button, GLint State, int x, int y) {
+	if (Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) { //왼쪽 마우스 버튼을 눌렀을 때, 기준점잡기.
 		mouseX = x;
-	}
-	if (mouseY == -1) {
 		mouseY = y;
+		savemouseX = (float)((x - 0.5 * WINDOW_WIDTH) / (0.5 * WINDOW_WIDTH));
+		savemouseY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
 	}
 
-	if (mouseX < x) {	//pan right
-		panRad -= 0.3f;
-		updateViewmat();
-		mouseX = x;
+}
+void myMouseDrag(int x, int y) {
+
+	if (Holding == FALSE) { //F1 안누를 시,
+		varX = (float)((x - 0.5 * WINDOW_WIDTH) / (0.5 * WINDOW_WIDTH));
+		varY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
+		box_vertices[0] = savemouseX;
+		box_vertices[1] = savemouseY;
+		box_vertices[3] = varX;
+		box_vertices[4] = savemouseY;
+		box_vertices[6] = varX;
+		box_vertices[7] = varY;
+		box_vertices[9] = savemouseX;
+		box_vertices[10] = varY;
+
+		if (mouseX < x) {	//pan right
+			if (mouseY < y) {
+				tiltRad -= 0.3f;
+			}
+			else if (mouseY > y) {
+				tiltRad += 0.3f;
+			}
+			panRad -= 0.3f;
+			updateViewmat();
+			mouseX = x;
+			mouseY = y;
+		}
+		else if (mouseX > x) {
+			if (mouseY < y) {	//tilt up
+				tiltRad -= 0.3f;
+			}
+			else if (mouseY > y) {				//tilt down
+				tiltRad += 0.3f;
+			}
+			panRad += 0.3f;
+			updateViewmat();
+			mouseX = x;
+			mouseY = y;
+		}
+		else {
+			if (mouseY < y) {	//tilt up
+				tiltRad -= 0.3f;
+			}
+			else if (mouseY > y) {				//tilt down
+				tiltRad += 0.3f;
+			}
+			updateViewmat();
+			mouseX = x;
+			mouseY = y;
+		}
 	}
-	else {				//pan left
-		panRad += 0.3f;
-		updateViewmat();
-		mouseX = x;
-	}
-	if (mouseY < y) {	//tilt up
-		tiltRad -= 0.3f;
-		mouseY = y;
-	}
-	else {				//tilt down
-		tiltRad += 0.3f;
-		mouseY = y;
+	else {
+
+		varX = (float)((x - 0.5 * WINDOW_WIDTH) / (0.5 * WINDOW_WIDTH));
+		varY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
+		box_vertices[0] = savemouseX;
+		box_vertices[1] = savemouseY;
+		box_vertices[3] = varX;
+		box_vertices[4] = savemouseY;
+		box_vertices[6] = varX;
+		box_vertices[7] = varY;
+		box_vertices[9] = savemouseX;
+		box_vertices[10] = varY;
+
 	}
 
 	glutPostRedisplay();
@@ -1116,7 +1189,7 @@ void MyMouseWheelFunc(int wheel, int direction, int x, int y) {
 			projectmat = perspectiveMat;
 			updateViewmat();
 		}
-		else if (orthoOn = 1) {
+		else if (orthoOn == 1) {
 			maxX += 0.1f;
 			minX -= 0.1f;
 			maxY += 0.1f;
@@ -1156,13 +1229,14 @@ void init()
 	}
 
 	programID = LoadShaders("VertexShader.txt", "FragmentShader.txt");
+	programID2 = LoadShaders("VertexShader2_box.txt", "FragmentShader2_box.txt");
 	glUseProgram(programID);
 
-	glGenVertexArrays(1, &vao);
+	glGenVertexArrays(2, vao);
 
 	glGenBuffers(2, vbo);
 
-	glBindVertexArray(vao);
+	glBindVertexArray(vao[0]);
 
 	glGenBuffers(1, &ebo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -1210,6 +1284,20 @@ void init()
 	glUniform3fv(glGetUniformLocation(programID, "material.specular"), 1, &material.MTL_Kd[0]);
 
 	glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
+
+	// ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡBox drawingㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+	glUseProgram(programID2);
+	glBindVertexArray(vao[1]);
+	glGenBuffers(1, &vbo_box);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_box);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, box_vertices, GL_STATIC_DRAW);
+
+	GLuint vtxPosition2 = glGetAttribLocation(programID2, "vtxPosition");
+	glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+	glEnableVertexAttribArray(vtxPosition);
+
+	glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0);
+
 }
 int main(int argc, char** argv)
 {
@@ -1220,7 +1308,7 @@ int main(int argc, char** argv)
 	glutInitDisplayMode(/* GLUT_3_2_CORE_PROFILE | */ GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 	//These two functions are used to define the position and size of the window. 
 	glutInitWindowPosition(200, 200);
-	glutInitWindowSize(WINDOWSIZE, WINDOWSIZE);
+	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	//This is used to define the name of the window.
 	glutCreateWindow("Simple OpenGL Window");
 
@@ -1234,12 +1322,13 @@ int main(int argc, char** argv)
 	glutDisplayFunc(renderScene);
 	//enter GLUT event processing cycle
 	glutKeyboardFunc(myKeyboard);
-	glutMotionFunc(myMouse);
+	glutMouseFunc(myMouseClick);
+	glutMotionFunc(myMouseDrag);
 	glutMouseWheelFunc(MyMouseWheelFunc);
 
 	glutMainLoop();
 
-	glDeleteVertexArrays(1, &vao);
+	glDeleteVertexArrays(2, vao);
 
 	return 1;
 }

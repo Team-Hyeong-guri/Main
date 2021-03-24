@@ -34,7 +34,7 @@ void main()
 		vec4 transNorm = viewmat*worldMat*vec4(outNormal,0.0);
 		vec3 tNorm = normalize(transNorm.xyz);
    
-		color = lightColor * (dot(lightDir,tNorm.xyz)* material.diffuse);
+		color += lightColor * (dot(lightDir,tNorm.xyz)* material.diffuse);
    
 		vec3 reflectedLight = normalize(reflect(lightDir,tNorm.xyz));
 		vec3 viewDir = normalize(vec3(0,0,0) -vPos.xyz);
