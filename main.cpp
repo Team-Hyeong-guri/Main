@@ -5,7 +5,8 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <algorithm> 
+#include <algorithm>
+#include <time.h>
 #include<glm/glm.hpp>
 #include<glm/gtx/transform.hpp>
 #include<glm/gtc/matrix_transform.hpp>
@@ -25,9 +26,9 @@ GLuint programID;
 GLuint programID2; //박스 프로그램
 GLuint VertexArrayID;
 
-string filename = "PiggyBank.obj";
+string filename = "YuSample.obj";
 string mtlpath; //mtl 파일명 저장.
-float scale = 0.3f;
+float scale = 0.003f;
 
 vector<GLuint>vertexIndices, texIndices, normalIndices;
 vector<glm::vec3>obj_vertices;
@@ -208,7 +209,6 @@ void add_near_vertex(int vertex1, int vertex2, int vertex3, int face_num) {
 };
 void calc_normal(int num,int vertex_n1, int vertex_n2, int vertex_n3) {
 	glm::vec3 vec2_1, vec3_1;
-	//cout << "num : " << num << "  vertex_n1 : " << vertex_n1 << "  vertex_n2 : " << vertex_n2 << "  vertex_n3 : " << vertex_n3 << endl;
 	vec2_1 = obj_vertices[vertex_n2] - obj_vertices[vertex_n1];
 	vec3_1 = obj_vertices[vertex_n3] - obj_vertices[vertex_n1];
 	
@@ -234,7 +234,10 @@ void calc_sin(int num, int vertex) {
 	
 	double ta = sqrt(vertexX_V.x*vertexX_V.x + vertexX_V.y*vertexX_V.y + vertexX_V.z*vertexX_V.z);
 	double tb = XdotN_VdotN;
-	vertexInfo[num].calc_curv += tb / ta;
+	
+	double tbta = tb / ta;
+
+	vertexInfo[num].calc_curv += tb/ta;
 	vertexInfo[num].calc_count++;
 
 
@@ -259,10 +262,6 @@ void calc_sin2(int num, int face) {
 	double normal1 = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
 	double normal2 = sqrt(face_normal.x*face_normal.x + face_normal.y*face_normal.y
 		+ face_normal.z*face_normal.z);
-
-	
-
-
 
 	vertexInfo[num].calc_curv += glm::dot(normal, face_normal) / (normal1*normal2);
 	vertexInfo[num].calc_count++;
@@ -327,23 +326,25 @@ void calc_color() {
 		vertexInfo[i].normal_vec = glm::normalize(glm::vec3 (vertexInfo[i].normal_vec.x/normal_count ,
 			vertexInfo[i].normal_vec.y / normal_count, vertexInfo[i].normal_vec.z / normal_count));
 
+
+		//--------------use calc sin--------------
 		for (int j = 0; j < near_vertex_count; j++) {
-			int first_face = (int)vertexInfo[i].near_face[j].x;
-			int second_face = (int)vertexInfo[i].near_face[j].y;
-//			
-			calc_sin(i, j);
+			int k = vertexInfo[i].near_vertex[j];
+			calc_sin(i, k);
 			
 		}
-		//for (int j = 0; j < vertexInfo[i].near_face_2.size(); j++) {
-			//cout << (vertexInfo[i].near_face_2[j]) << endl;
-		//	calc_sin2(i, vertexInfo[i].near_face_2[j]);
-		//}
-		//cout << vertexInfo[i].calc_count << endl;
 		vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);
-		vertexInfo[i].calc_curv = sqrt(1 - vertexInfo[i].calc_curv*vertexInfo[i].calc_curv);
-		//int a = int(vertexInfo[i].calc_curv*100);
-		vertexInfo[i].calc_curv = vertexInfo[i].calc_curv * 3;
-		//cout << vertexInfo[i].calc_curv << endl;
+		vertexInfo[i].calc_curv = vertexInfo[i].calc_curv * 3;					//scale calc_curv
+		
+
+		//--------------use calc sin2--------------
+		/*for (int j = 0; j < vertexInfo[i].near_face_2.size(); j++) {
+			calc_sin2(i, vertexInfo[i].near_face_2[j]);
+		}
+		vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);
+		vertexInfo[i].calc_curv = sqrt(1 - vertexInfo[i].calc_curv*vertexInfo[i].calc_curv)*1.5;		//chagne cos to sin 
+		*/
+
 		aColor.push_back(glm::vec3(vertexInfo[i].calc_curv,0.,0.));
 	}
 };
@@ -935,6 +936,8 @@ void renderScene(void)
 	glVertexAttribPointer(vtxPosition2, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
 	glDrawArrays(GL_LINE_LOOP, 0, 4);
 
+	glUseProgram(programID);
+	
 	//Double buffer
 	glutSwapBuffers();
 }
@@ -1217,15 +1220,14 @@ void init()
 	
 	calc_color();
 
+
 	int a = 0;
+	cout << "---------------------test---------------------" << endl;
+	cout << "near vertex\tnear face\tnear face" << endl;
 	for (int i = 0; i < vertexInfo[a].near_vertex.size(); i++) {
-		cout << vertexInfo[a].near_vertex[i] << "  " << vertexInfo[a].near_face[i].x << "  " << vertexInfo[a].near_face[i].y << endl;
+		cout << vertexInfo[a].near_vertex[i] << "\t\t" << vertexInfo[a].near_face[i].x << " \t\t" << vertexInfo[a].near_face[i].y << endl;
 	}
-	cout << endl;
-	cout << vertexInfo[a].near_vertex_count <<"  "<<vertexInfo[a].normal_count<<"  "<<vertexInfo[a].calc_count<< endl;
-	for (int i = 0; i < vertexInfo[a].near_face_2.size(); i++) {
-		cout << vertexInfo[a].near_face_2[i] << endl;
-	}
+	cout << "----------------------------------------------" << endl<<endl;
 
 	programID = LoadShaders("VertexShader.txt", "FragmentShader.txt");
 	programID2 = LoadShaders("VertexShader2_box.txt", "FragmentShader2_box.txt");
@@ -1300,6 +1302,9 @@ void init()
 }
 int main(int argc, char** argv)
 {
+	clock_t start, end;
+	start = clock();
+
 	//init GLUT and create Window
 	//initialize the GLUT
 	glutInit(&argc, argv);
@@ -1324,6 +1329,10 @@ int main(int argc, char** argv)
 	glutMouseFunc(myMouseClick);
 	glutMotionFunc(myMouseDrag);
 	glutMouseWheelFunc(MyMouseWheelFunc);
+
+	end = clock();
+	cout << "Running Time  :  "<<end - start <<" ms"<< endl;
+	cout << "                 " << (end - start)*0.001 << " s" << endl;
 
 	glutMainLoop();
 
