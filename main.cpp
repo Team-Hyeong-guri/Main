@@ -27,7 +27,7 @@ GLuint programID2; //박스 프로그램
 GLuint VertexArrayID;
 
 string filename = "PiggyBank.obj";
-string mtlpath; //mtl 파일명 저장.
+string mtlpath; //mtl 파일명 저장..
 float scale = 0.3f;
 
 vector<GLuint>vertexIndices, texIndices, normalIndices;
@@ -1193,8 +1193,6 @@ void myKeyboard(unsigned char key, int x, int y) {
 		glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
 		break;
 	}
-
-
 	glutPostRedisplay();
 
 }
