@@ -5,7 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <algorithm>
+#include <algorithm> 
 #include <time.h>
 #include<glm/glm.hpp>
 #include<glm/gtx/transform.hpp>
@@ -26,26 +26,29 @@ GLuint programID;
 GLuint programID2; //박스 프로그램
 GLuint VertexArrayID;
 
-string filename = "YuSample.obj";
-string mtlpath; //mtl 파일명 저장.
-float scale = 0.003f;
+string filename = "PiggyBank.obj";
+string mtlpath; //mtl 파일명 저장..
+float scale = 0.3f;
 
 vector<GLuint>vertexIndices, texIndices, normalIndices;
 vector<glm::vec3>obj_vertices;
 vector<glm::vec2>obj_texcoord;
 vector<glm::vec3>obj_normals;
 vector<glm::vec3>aColor;
+vector<glm::vec3>bColor; // box 후 컬러.
 float box_vertices[12] = {
-	0.0f, 0.0f, 0.0f,
-	0.0f, 1.0f, 0.0f,
-	1.0f, 1.0f, 0.0f,
-	1.0f, 0.0f, 0.0f
+	0.0f, 0.0f, -1.0f,
+	0.0f, 0.0f, -1.0f,
+	0.0f, 0.0f, -1.0f,
+	0.0f, 0.0f, -1.0f
 };
 GLuint vbo_box; //박스 위치 버퍼
 int mouseX;	// 마우스로 시점 이동시 전의 마우스좌표 저장  / 초기 설정 -1
 int mouseY;
-float savemouseX; // 박스 시작 위치 x
-float savemouseY; // 박스 시작 위치 y
+float StartmouseX; // 박스 시작 위치 x
+float StartmouseY; // 박스 시작 위치 y
+float EndmouseX; //q
+float EndmouseY;
 float varX; //박스 끝위치 x
 float varY; //박스 끝위치 y
 bool Holding = FALSE;
@@ -98,6 +101,8 @@ float randRad;
 float persRad = 60;
 int lightTurnOnOff = 1;
 
+glm::mat4 realMat = glm::mat4(1.0f); // 박스좌표 계산을 위한 매트릭스
+glm::vec4 vPos; // 박스좌표 계산을 위한 좌표
 glm::mat4 wmat = glm::mat4(1.0f);
 glm::mat4 viewmat = glm::mat4(1.0f);
 glm::mat4 tiltmat = glm::mat4(1.0f);
@@ -117,6 +122,7 @@ void onReadMTLFile(string path);
 void parseKd(string line); // mtl파일의 Kd 저장.
 void parseKa(string line); // mtl파일의 ka 저장.
 void parseKs(string line); // mtl파일의 ks 저장.
+int HowDrawBox(float start_X, float start_Y, float End_X, float End_Y);
 
 void add_near_vertex(int vertex1, int vertex2, int vertex3, int face_num) {
 	auto vertex1_begin = vertexInfo[vertex1].near_vertex.begin();
@@ -209,6 +215,7 @@ void add_near_vertex(int vertex1, int vertex2, int vertex3, int face_num) {
 };
 void calc_normal(int num,int vertex_n1, int vertex_n2, int vertex_n3) {
 	glm::vec3 vec2_1, vec3_1;
+
 	vec2_1 = obj_vertices[vertex_n2] - obj_vertices[vertex_n1];
 	vec3_1 = obj_vertices[vertex_n3] - obj_vertices[vertex_n1];
 	
@@ -234,10 +241,9 @@ void calc_sin(int num, int vertex) {
 	
 	double ta = sqrt(vertexX_V.x*vertexX_V.x + vertexX_V.y*vertexX_V.y + vertexX_V.z*vertexX_V.z);
 	double tb = XdotN_VdotN;
-	
 	double tbta = tb / ta;
 
-	vertexInfo[num].calc_curv += tb/ta;
+	vertexInfo[num].calc_curv += tb / ta;
 	vertexInfo[num].calc_count++;
 
 
@@ -288,7 +294,7 @@ void calc_color() {
 					int vertex_n12 = vertexIndices[(first_face - 1) * 3 + 1];
 					int vertex_n13 = vertexIndices[(first_face - 1) * 3 + 2];
 
-					calc_normal(i, vertex_n11, vertex_n12, vertex_n13);
+					calc_normal(i, vertex_n11, vertex_n12, vertex_n13); // i가 일정하지않나에 대한 의문.ㅡㅡㅡ
 
 					continue;
 				}
@@ -326,28 +332,113 @@ void calc_color() {
 		vertexInfo[i].normal_vec = glm::normalize(glm::vec3 (vertexInfo[i].normal_vec.x/normal_count ,
 			vertexInfo[i].normal_vec.y / normal_count, vertexInfo[i].normal_vec.z / normal_count));
 
-
 		//--------------use calc sin--------------
 		for (int j = 0; j < near_vertex_count; j++) {
 			int k = vertexInfo[i].near_vertex[j];
 			calc_sin(i, k);
-			
 		}
 		vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);
-		vertexInfo[i].calc_curv = vertexInfo[i].calc_curv * 3;					//scale calc_curv
-		
+		vertexInfo[i].calc_curv = vertexInfo[i].calc_curv * 3;
 
 		//--------------use calc sin2--------------
 		/*for (int j = 0; j < vertexInfo[i].near_face_2.size(); j++) {
 			calc_sin2(i, vertexInfo[i].near_face_2[j]);
 		}
 		vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);
-		vertexInfo[i].calc_curv = sqrt(1 - vertexInfo[i].calc_curv*vertexInfo[i].calc_curv)*1.5;		//chagne cos to sin 
+		vertexInfo[i].calc_curv = sqrt(1 - vertexInfo[i].calc_curv*vertexInfo[i].calc_curv)*1.5;		//chagne cos to sin
 		*/
 
 		aColor.push_back(glm::vec3(vertexInfo[i].calc_curv,0.,0.));
 	}
 };
+void calc_box_color() {
+
+	bColor.clear();
+	int How = HowDrawBox(StartmouseX, StartmouseY, EndmouseX, EndmouseY);
+
+	for (int i = 0; i < vertex_count; i++) {
+		vPos = glm::vec4(obj_vertices[i], 1.);
+		vPos = realMat * vPos;
+		
+		switch (How)
+		{
+		case 1: //우측 상단으로 선택
+			if ((StartmouseX <= vPos.x) && (vPos.x <= EndmouseX)) {
+				if ((StartmouseY <= vPos.y) && (vPos.y <= EndmouseY)) {
+					bColor.push_back(glm::vec3(0.74, 1., 0.));
+				}
+				else {
+					bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+				}
+			}
+			else {
+				bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+			}
+			break;
+		case 2: //우측 하단으로 선택
+			if ((StartmouseX <= vPos.x) && (vPos.x <= EndmouseX)) {
+				if ((EndmouseY <= vPos.y) && (vPos.y <= StartmouseY)) {
+					bColor.push_back(glm::vec3(0.74, 1., 0.));
+				}
+				else {
+					bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+				}
+			}
+			else {
+				bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+			}
+			break;
+		case 3: //좌측 상단으로 선택
+			if ((EndmouseX <= vPos.x) && (vPos.x <= StartmouseX)) {
+				if ((StartmouseY <= vPos.y) && (vPos.y <= EndmouseY)) {
+					bColor.push_back(glm::vec3(0.74, 1., 0.));
+				}
+				else {
+					bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+				}
+			}
+			else {
+				bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+			}
+			break;
+		case 4: //좌측 하단으로 선택
+			if ((EndmouseX <= vPos.x) && (vPos.x <= StartmouseX)) {
+				if ((EndmouseY <= vPos.y) && (vPos.y <= StartmouseY)) {
+					bColor.push_back(glm::vec3(0.74, 1., 0.));
+				}
+				else {
+					bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+				}
+			}
+			else {
+				bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+			}
+			break;
+		}
+
+
+	}
+}
+
+
+int HowDrawBox(float start_X, float start_Y, float End_X, float End_Y) {
+	if (start_X < End_X) {
+		if (start_Y < End_Y) {
+			return 1;
+		}
+		else {
+			return 2;
+		}
+	}
+	else {
+		if (start_Y < End_Y) { 
+			return 3;
+		}
+		else{
+			return 4;
+		}
+	}
+}
 void onReadMTLFile(string path) {
 	ifstream file(path);
 	if (file.fail()) {
@@ -639,6 +730,7 @@ void parseFace(string line, string currentMaterialName) {
 			vertexIndices.push_back(stoi(sub_line[2]) - 1);
 		}
 		else {
+			//cout << "slash" << endl;
 
 
 
@@ -806,6 +898,9 @@ void updateViewmat() {
 	transmat = glm::translate(glm::vec3(transX, transY, transZ));
 
 	viewmat = glm::inverse(transmat) * glm::transpose(tiltmat * rotmat);
+
+	realMat = viewmat * wmat;
+	realMat = projectmat * realMat;
 }
 GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 {
@@ -908,6 +1003,7 @@ void renderScene(void)
 
 	//define the size of point and draw a point.
 
+
 	glUseProgram(programID);
 
 	GLuint lightPosID = glGetUniformLocation(programID, "uLightPos");
@@ -922,8 +1018,19 @@ void renderScene(void)
 	GLuint projectID = glGetUniformLocation(programID, "projectmat");
 	glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat[0][0]);
 
+	glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
+
 	glBindVertexArray(vao[0]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+
+	if (!bColor.empty()) { // 박스를 지정했을 경우
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * bColor.size(), bColor.data(), GL_STATIC_DRAW);
+		GLint bColor = glGetAttribLocation(programID, "a_Color");
+		glVertexAttribPointer(bColor, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+		glEnableVertexAttribArray(bColor);
+	}
+
 	glDrawElements(GL_TRIANGLES, vertexIndices.size(), GL_UNSIGNED_INT, (void*)0);
 	//glDrawArrays(GL_POINTS, 0, obj_vertices.size());
 
@@ -937,12 +1044,14 @@ void renderScene(void)
 	glDrawArrays(GL_LINE_LOOP, 0, 4);
 
 	glUseProgram(programID);
-	
 	//Double buffer
 	glutSwapBuffers();
 }
 void myKeyboard(unsigned char key, int x, int y) {
 	switch (key) {
+	case '/': 
+		Holding = !Holding;
+		break;
 	case 'o':
 		orthoOn = 1;
 		maxX = 1.0f;
@@ -1084,33 +1193,35 @@ void myKeyboard(unsigned char key, int x, int y) {
 		glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
 		break;
 	}
-
-
 	glutPostRedisplay();
 
 }
 void myMouseClick(GLint Button, GLint State, int x, int y) {
-	if (Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) { //왼쪽 마우스 버튼을 눌렀을 때, 기준점잡기.
+	if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE) { //왼쪽 마우스 버튼을 눌렀을 때, 기준점잡기.
+		glUseProgram(programID2);
+		glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0); //빨간 점으로 표시.
+		glUseProgram(programID);
 		mouseX = x;
 		mouseY = y;
-		savemouseX = (float)((x - 0.5 * WINDOW_WIDTH) / (0.5 * WINDOW_WIDTH));
-		savemouseY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
+		StartmouseX = (float)((x - 0.5 * WINDOW_WIDTH) / (0.5 * WINDOW_WIDTH));
+		StartmouseY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
+	}
+	else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE) { //왼쪽 마우스 뗐을 경우, z값 초기화.
+		
+		box_vertices[2] = 1;
+		box_vertices[5] = 1;
+		box_vertices[8] = 1;
+		box_vertices[11] = 1;
+		EndmouseX = (float)((x - 0.5 * WINDOW_WIDTH) / (0.5 * WINDOW_WIDTH));
+		EndmouseY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
+		calc_box_color();
+
 	}
 
 }
 void myMouseDrag(int x, int y) {
 
-	if (Holding == FALSE) { //F1 안누를 시,
-		varX = (float)((x - 0.5 * WINDOW_WIDTH) / (0.5 * WINDOW_WIDTH));
-		varY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
-		box_vertices[0] = savemouseX;
-		box_vertices[1] = savemouseY;
-		box_vertices[3] = varX;
-		box_vertices[4] = savemouseY;
-		box_vertices[6] = varX;
-		box_vertices[7] = varY;
-		box_vertices[9] = savemouseX;
-		box_vertices[10] = varY;
+	if (Holding == FALSE) { //'/' 안누를 시.
 
 		if (mouseX < x) {	//pan right
 			if (mouseY < y) {
@@ -1152,14 +1263,18 @@ void myMouseDrag(int x, int y) {
 
 		varX = (float)((x - 0.5 * WINDOW_WIDTH) / (0.5 * WINDOW_WIDTH));
 		varY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
-		box_vertices[0] = savemouseX;
-		box_vertices[1] = savemouseY;
+		box_vertices[0] = StartmouseX;
+		box_vertices[1] = StartmouseY;
 		box_vertices[3] = varX;
-		box_vertices[4] = savemouseY;
+		box_vertices[4] = StartmouseY;
 		box_vertices[6] = varX;
 		box_vertices[7] = varY;
-		box_vertices[9] = savemouseX;
+		box_vertices[9] = StartmouseX;
 		box_vertices[10] = varY;
+		box_vertices[2] = -1;
+		box_vertices[5] = -1;
+		box_vertices[8] = -1;
+		box_vertices[11] = -1;
 
 	}
 
@@ -1220,17 +1335,18 @@ void init()
 	
 	calc_color();
 
-
 	int a = 0;
 	cout << "---------------------test---------------------" << endl;
 	cout << "near vertex\tnear face\tnear face" << endl;
+
 	for (int i = 0; i < vertexInfo[a].near_vertex.size(); i++) {
 		cout << vertexInfo[a].near_vertex[i] << "\t\t" << vertexInfo[a].near_face[i].x << " \t\t" << vertexInfo[a].near_face[i].y << endl;
 	}
-	cout << "----------------------------------------------" << endl<<endl;
+	cout << "----------------------------------------------" << endl << endl;
 
 	programID = LoadShaders("VertexShader.txt", "FragmentShader.txt");
 	programID2 = LoadShaders("VertexShader2_box.txt", "FragmentShader2_box.txt");
+
 	glUseProgram(programID);
 
 	glGenVertexArrays(2, vao);
@@ -1297,7 +1413,7 @@ void init()
 	glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
 	glEnableVertexAttribArray(vtxPosition);
 
-	glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0);
+	//glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0);
 
 }
 int main(int argc, char** argv)
@@ -1331,8 +1447,9 @@ int main(int argc, char** argv)
 	glutMouseWheelFunc(MyMouseWheelFunc);
 
 	end = clock();
-	cout << "Running Time  :  "<<end - start <<" ms"<< endl;
-	cout << "                 " << (end - start)*0.001 << " s" << endl;
+	cout << "Running Time  :  " << end - start << " ms" << endl;
+	cout << "                 " << (end - start) * 0.001 << " s" << endl;
+
 
 	glutMainLoop();
 
