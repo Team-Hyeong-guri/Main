@@ -10,14 +10,13 @@
 #include<glm/glm.hpp>
 #include<glm/gtx/transform.hpp>
 #include<glm/gtc/matrix_transform.hpp>
-
 #include <GL/glew.h>
 #include<GL/wglew.h>
 #include <GL/glut.h>
 #include<GL/freeglut.h>
 
 #define WINDOW_HEIGHT 600
-#define WINDOW_WIDTH 600
+#define WINDOW_WIDTH 1200
 #define TO_RADIAN 0.01745329252f 
 
 using namespace std;
@@ -26,31 +25,44 @@ GLuint programID;
 GLuint programID2; //박스 프로그램
 GLuint VertexArrayID;
 
+int mainWindow, subWindow1, subWindow2;
+
 string filename = "PiggyBank.obj";
+string filename2 = "YuSample.obj";
 string mtlpath; //mtl 파일명 저장..
 float scale = 0.3f;
+float scale2 = 0.003f;
+
+int subwindow_num = 1;
 
 vector<GLuint>vertexIndices, texIndices, normalIndices;
-vector<glm::vec3>obj_vertices;
-vector<glm::vec2>obj_texcoord;
-vector<glm::vec3>obj_normals;
-vector<glm::vec3>aColor;
-vector<glm::vec3>bColor; // box 후 컬러.
+vector<GLuint>vertexIndices2, texIndices2, normalIndices2;
+vector<glm::vec3>obj_vertices, obj_vertices2;
+vector<glm::vec2>obj_texcoord, obj_texcoord2;
+vector<glm::vec3>obj_normals, obj_normals2;
+vector<glm::vec3>aColor, aColor2;
+vector<glm::vec3>bColor, bColor2; // box 후 컬러.
 float box_vertices[12] = {
 	0.0f, 0.0f, -1.0f,
 	0.0f, 0.0f, -1.0f,
 	0.0f, 0.0f, -1.0f,
 	0.0f, 0.0f, -1.0f
 };
+float box_vertices2[12] = {
+	0.0f, 0.0f, -1.0f,
+	0.0f, 0.0f, -1.0f,
+	0.0f, 0.0f, -1.0f,
+	0.0f, 0.0f, -1.0f
+};
 GLuint vbo_box; //박스 위치 버퍼
-int mouseX;	// 마우스로 시점 이동시 전의 마우스좌표 저장  / 초기 설정 -1
-int mouseY;
-float StartmouseX; // 박스 시작 위치 x
-float StartmouseY; // 박스 시작 위치 y
-float EndmouseX; //q
-float EndmouseY;
-float varX; //박스 끝위치 x
-float varY; //박스 끝위치 y
+int mouseX,mouseX2;	// 마우스로 시점 이동시 전의 마우스좌표 저장  / 초기 설정 -1
+int mouseY,mouseY2;
+float StartmouseX, StartmouseX2; // 박스 시작 위치 x
+float StartmouseY, StartmouseY2; // 박스 시작 위치 y
+float EndmouseX, EndmouseX2; //q
+float EndmouseY, EndmouseY2;
+float varX, varX2; //박스 끝위치 x
+float varY, varY2; //박스 끝위치 y
 bool Holding = FALSE;
 
 
@@ -77,41 +89,45 @@ struct vertex_info {
 	double calc_count = 0;
 };
 vertex_info*vertexInfo;
+vertex_info*vertexInfo2;
+
 int first_f_check = 0; //처음 f를 읽었는지 체크
 
 int vertex_count = 0;
+int vertex_count2 = 0;
 int face_count = 0;
+int face_count2 = 0;
 
 int windowCheck;
 
-float maxX = 1.0f;
-float minX = -1.0f;
-float maxY = 1.0f;
-float minY = -1.0f;
-float panRad = 0.f;
-float tiltRad = 0.f;
-float transX = 0.f;
-float transY = 0.f;
-float transZ = 2.0f;
-float zNear = 0.01f;
-float zFar = 10.0f;
-int orthoOn = 1;
-int first = 1;
-float randRad;
-float persRad = 60;
-int lightTurnOnOff = 1;
+float maxX = 1.0f,maxX2 = 1.0f;
+float minX = -1.0f, minX2 = -1.0f;
+float maxY = 1.0f, maxY2 = 1.0f;
+float minY = -1.0f, minY2 = -1.0f;
+float panRad = 0.f, panRad2 = 0.f;
+float tiltRad = 0.f, tiltRad2 = 0.f;
+float transX = 0.f, transX2 = 0.f;
+float transY = 0.f, transY2 = 0.f;
+float transZ = 2.0f, transZ2 = 2.0f;
+float zNear = 0.01f, zNear2 = 0.01f;
+float zFar = 10.0f, zFar2 = 10.0f;
+int orthoOn = 1, orthoOn2 = 1;
+int first = 1, first2 = 1;
+float randRad, randRad2;
+float persRad = 60, persRad2 = 60;
+int lightTurnOnOff = 1, lightTurnOnOff2 = 1;
 
-glm::mat4 realMat = glm::mat4(1.0f); // 박스좌표 계산을 위한 매트릭스
-glm::vec4 vPos; // 박스좌표 계산을 위한 좌표
-glm::mat4 wmat = glm::mat4(1.0f);
-glm::mat4 viewmat = glm::mat4(1.0f);
-glm::mat4 tiltmat = glm::mat4(1.0f);
-glm::mat4 rotmat = glm::mat4(1.0f);
-glm::mat4 transmat = glm::mat4(1.0f);
-glm::mat4 orthoMat = glm::mat4(1.0f);
-glm::mat4 projectmat = glm::mat4(1.0f);
-glm::mat4 normalMat = glm::mat4(1.0f);
-glm::vec3 lightPos = glm::vec3(10.0f, 10.0f, 10.0f);
+glm::mat4 realMat = glm::mat4(1.0f), realMat2 = glm::mat4(1.0f); // 박스좌표 계산을 위한 매트릭스
+glm::vec4 vPos,vPos2; // 박스좌표 계산을 위한 좌표
+glm::mat4 wmat = glm::mat4(1.0f), wmat2 = glm::mat4(1.0f);
+glm::mat4 viewmat = glm::mat4(1.0f), viewmat2 = glm::mat4(1.0f);
+glm::mat4 tiltmat = glm::mat4(1.0f), tiltmat2 = glm::mat4(1.0f);
+glm::mat4 rotmat = glm::mat4(1.0f), rotmat2 = glm::mat4(1.0f);
+glm::mat4 transmat = glm::mat4(1.0f), transmat2 = glm::mat4(1.0f);
+glm::mat4 orthoMat = glm::mat4(1.0f), orthoMat2 = glm::mat4(1.0f);
+glm::mat4 projectmat = glm::mat4(1.0f), projectmat2 = glm::mat4(1.0f);
+glm::mat4 normalMat = glm::mat4(1.0f), normalMat2 = glm::mat4(1.0f);
+glm::vec3 lightPos = glm::vec3(10.0f, 10.0f, 10.0f), lightPos2 = glm::vec3(10.0f, 10.0f, 10.0f);
 
 GLuint vbo[2];
 GLuint vao[2];
@@ -125,126 +141,255 @@ void parseKs(string line); // mtl파일의 ks 저장.
 int HowDrawBox(float start_X, float start_Y, float End_X, float End_Y);
 
 void add_near_vertex(int vertex1, int vertex2, int vertex3, int face_num) {
-	auto vertex1_begin = vertexInfo[vertex1].near_vertex.begin();
-	auto vertex1_end = vertexInfo[vertex1].near_vertex.end();
-	vector<int>::iterator iter12 = find(vertex1_begin, vertex1_end, vertex2);
-	int vertex12 = distance(vertex1_begin, iter12);
+	if (subwindow_num == 1) {
+		auto vertex1_begin = vertexInfo[vertex1].near_vertex.begin();
+		auto vertex1_end = vertexInfo[vertex1].near_vertex.end();
+		vector<int>::iterator iter12 = find(vertex1_begin, vertex1_end, vertex2);
+		int vertex12 = distance(vertex1_begin, iter12);
+
+		if (vertex12 == vertexInfo[vertex1].near_vertex.size()) {	//기존에 vertex1의 near vertex에 vertex2가 없을때
+			vertexInfo[vertex1].near_vertex.push_back(vertex2);
+			vertexInfo[vertex1].near_face.push_back(glm::vec2(face_num, -1));
+		}
+		else {										//있을때
+			vertexInfo[vertex1].near_face[vertex12] =
+				glm::vec2(vertexInfo[vertex1].near_face[vertex12].x, face_num);
+		}
+
+		auto vertex1_begin2 = vertexInfo[vertex1].near_vertex.begin();
+		auto vertex1_end2 = vertexInfo[vertex1].near_vertex.end();
+		vector<int>::iterator iter13 = find(vertex1_begin2, vertex1_end2, vertex3);
+		int vertex13 = distance(vertex1_begin2, iter13);
+		if (vertex13 == vertexInfo[vertex1].near_vertex.size()) {	//1 3 x
+			vertexInfo[vertex1].near_vertex.push_back(vertex3);
+			vertexInfo[vertex1].near_face.push_back(glm::vec2(face_num, -1));
+		}
+		else {										//있을때
+			vertexInfo[vertex1].near_face[vertex13] =
+				glm::vec2(vertexInfo[vertex1].near_face[vertex13].x, face_num);
+		}
+
+
+
+		auto vertex2_begin = vertexInfo[vertex2].near_vertex.begin();
+		auto vertex2_end = vertexInfo[vertex2].near_vertex.end();
+		vector<int>::iterator iter21 = find(vertex2_begin, vertex2_end, vertex1);
+		int vertex21 = distance(vertex2_begin, iter21);
+
+		if (vertex21 == vertexInfo[vertex2].near_vertex.size()) {	//기존에 vertex2의 near vertex에 vertex1가 없을때
+			vertexInfo[vertex2].near_vertex.push_back(vertex1);
+			vertexInfo[vertex2].near_face.push_back(glm::vec2(face_num, -1));
+		}
+		else {										//있을때
+			vertexInfo[vertex2].near_face[vertex21] =
+				glm::vec2(vertexInfo[vertex2].near_face[vertex21].x, face_num);
+		}
+
+		auto vertex2_begin2 = vertexInfo[vertex2].near_vertex.begin();
+		auto vertex2_end2 = vertexInfo[vertex2].near_vertex.end();
+		vector<int>::iterator iter23 = find(vertex2_begin2, vertex2_end2, vertex3);
+		int vertex23 = distance(vertex2_begin2, iter23);
+
+		if (vertex23 == vertexInfo[vertex2].near_vertex.size()) {	//2 3 x
+			vertexInfo[vertex2].near_vertex.push_back(vertex3);
+			vertexInfo[vertex2].near_face.push_back(glm::vec2(face_num, -1));
+		}
+		else {										//있을때
+			vertexInfo[vertex2].near_face[vertex23] =
+				glm::vec2(vertexInfo[vertex2].near_face[vertex23].x, face_num);
+		}
+
+
+
+		auto vertex3_begin = vertexInfo[vertex3].near_vertex.begin();
+		auto vertex3_end = vertexInfo[vertex3].near_vertex.end();
+		vector<int>::iterator iter31 = find(vertex3_begin, vertex3_end, vertex1);
+		int vertex31 = distance(vertex3_begin, iter31);
+
+		if (vertex31 == vertexInfo[vertex3].near_vertex.size()) {	//기존에 vertex3의 near vertex에 vertex1가 없을때
+			vertexInfo[vertex3].near_vertex.push_back(vertex1);
+			vertexInfo[vertex3].near_face.push_back(glm::vec2(face_num, -1));
+		}
+		else {										//있을때
+			vertexInfo[vertex3].near_face[vertex31] =
+				glm::vec2(vertexInfo[vertex3].near_face[vertex31].x, face_num);
+		}
+
+		auto vertex3_begin2 = vertexInfo[vertex3].near_vertex.begin();
+		auto vertex3_end2 = vertexInfo[vertex3].near_vertex.end();
+		vector<int>::iterator iter32 = find(vertex3_begin2, vertex3_end2, vertex2);
+		int vertex32 = distance(vertex3_begin2, iter32);
+
+		if (vertex32 == vertexInfo[vertex3].near_vertex.size()) {	//3 2 x
+			vertexInfo[vertex3].near_vertex.push_back(vertex2);
+			vertexInfo[vertex3].near_face.push_back(glm::vec2(face_num, -1));
+		}
+		else {										//있을때
+			vertexInfo[vertex3].near_face[vertex32] =
+				glm::vec2(vertexInfo[vertex3].near_face[vertex32].x, face_num);
+		}
+	}
+	else if (subwindow_num == 2) {												//subwindow 2
+		auto vertex1_begin = vertexInfo2[vertex1].near_vertex.begin();
+		auto vertex1_end = vertexInfo2[vertex1].near_vertex.end();
+		vector<int>::iterator iter12 = find(vertex1_begin, vertex1_end, vertex2);
+		int vertex12 = distance(vertex1_begin, iter12);
+
+		if (vertex12 == vertexInfo2[vertex1].near_vertex.size()) {	//기존에 vertex1의 near vertex에 vertex2가 없을때
+			vertexInfo2[vertex1].near_vertex.push_back(vertex2);
+			vertexInfo2[vertex1].near_face.push_back(glm::vec2(face_num, -1));
+		}
+		else {										//있을때
+			vertexInfo2[vertex1].near_face[vertex12] =
+				glm::vec2(vertexInfo2[vertex1].near_face[vertex12].x, face_num);
+		}
+
+		auto vertex1_begin2 = vertexInfo2[vertex1].near_vertex.begin();
+		auto vertex1_end2 = vertexInfo2[vertex1].near_vertex.end();
+		vector<int>::iterator iter13 = find(vertex1_begin2, vertex1_end2, vertex3);
+		int vertex13 = distance(vertex1_begin2, iter13);
+		if (vertex13 == vertexInfo2[vertex1].near_vertex.size()) {	//1 3 x
+			vertexInfo2[vertex1].near_vertex.push_back(vertex3);
+			vertexInfo2[vertex1].near_face.push_back(glm::vec2(face_num, -1));
+		}
+		else {										//있을때
+			vertexInfo2[vertex1].near_face[vertex13] =
+				glm::vec2(vertexInfo2[vertex1].near_face[vertex13].x, face_num);
+		}
+
+
+
+		auto vertex2_begin = vertexInfo2[vertex2].near_vertex.begin();
+		auto vertex2_end = vertexInfo2[vertex2].near_vertex.end();
+		vector<int>::iterator iter21 = find(vertex2_begin, vertex2_end, vertex1);
+		int vertex21 = distance(vertex2_begin, iter21);
+
+		if (vertex21 == vertexInfo2[vertex2].near_vertex.size()) {	//기존에 vertex2의 near vertex에 vertex1가 없을때
+			vertexInfo2[vertex2].near_vertex.push_back(vertex1);
+			vertexInfo2[vertex2].near_face.push_back(glm::vec2(face_num, -1));
+		}
+		else {										//있을때
+			vertexInfo2[vertex2].near_face[vertex21] =
+				glm::vec2(vertexInfo2[vertex2].near_face[vertex21].x, face_num);
+		}
+
+		auto vertex2_begin2 = vertexInfo2[vertex2].near_vertex.begin();
+		auto vertex2_end2 = vertexInfo2[vertex2].near_vertex.end();
+		vector<int>::iterator iter23 = find(vertex2_begin2, vertex2_end2, vertex3);
+		int vertex23 = distance(vertex2_begin2, iter23);
+
+		if (vertex23 == vertexInfo2[vertex2].near_vertex.size()) {	//2 3 x
+			vertexInfo2[vertex2].near_vertex.push_back(vertex3);
+			vertexInfo2[vertex2].near_face.push_back(glm::vec2(face_num, -1));
+		}
+		else {										//있을때
+			vertexInfo2[vertex2].near_face[vertex23] =
+				glm::vec2(vertexInfo2[vertex2].near_face[vertex23].x, face_num);
+		}
+
+
+
+		auto vertex3_begin = vertexInfo2[vertex3].near_vertex.begin();
+		auto vertex3_end = vertexInfo2[vertex3].near_vertex.end();
+		vector<int>::iterator iter31 = find(vertex3_begin, vertex3_end, vertex1);
+		int vertex31 = distance(vertex3_begin, iter31);
+
+		if (vertex31 == vertexInfo2[vertex3].near_vertex.size()) {	//기존에 vertex3의 near vertex에 vertex1가 없을때
+			vertexInfo2[vertex3].near_vertex.push_back(vertex1);
+			vertexInfo2[vertex3].near_face.push_back(glm::vec2(face_num, -1));
+		}
+		else {										//있을때
+			vertexInfo2[vertex3].near_face[vertex31] =
+				glm::vec2(vertexInfo2[vertex3].near_face[vertex31].x, face_num);
+		}
+
+		auto vertex3_begin2 = vertexInfo2[vertex3].near_vertex.begin();
+		auto vertex3_end2 = vertexInfo2[vertex3].near_vertex.end();
+		vector<int>::iterator iter32 = find(vertex3_begin2, vertex3_end2, vertex2);
+		int vertex32 = distance(vertex3_begin2, iter32);
+
+		if (vertex32 == vertexInfo2[vertex3].near_vertex.size()) {	//3 2 x
+			vertexInfo2[vertex3].near_vertex.push_back(vertex2);
+			vertexInfo2[vertex3].near_face.push_back(glm::vec2(face_num, -1));
+		}
+		else {										//있을때
+			vertexInfo2[vertex3].near_face[vertex32] =
+				glm::vec2(vertexInfo2[vertex3].near_face[vertex32].x, face_num);
+		}
+	}
 	
-	if (vertex12 == vertexInfo[vertex1].near_vertex.size()) {	//기존에 vertex1의 near vertex에 vertex2가 없을때
-		vertexInfo[vertex1].near_vertex.push_back(vertex2);
-		vertexInfo[vertex1].near_face.push_back(glm::vec2(face_num, -1));
-	}
-	else {										//있을때
-		vertexInfo[vertex1].near_face[vertex12] =
-			glm::vec2(vertexInfo[vertex1].near_face[vertex12].x, face_num);
-	}
-
-	auto vertex1_begin2 = vertexInfo[vertex1].near_vertex.begin();
-	auto vertex1_end2 = vertexInfo[vertex1].near_vertex.end();
-	vector<int>::iterator iter13 = find(vertex1_begin2, vertex1_end2, vertex3);
-	int vertex13 = distance(vertex1_begin2, iter13);
-	if (vertex13 == vertexInfo[vertex1].near_vertex.size()) {	//1 3 x
-		vertexInfo[vertex1].near_vertex.push_back(vertex3);
-		vertexInfo[vertex1].near_face.push_back(glm::vec2(face_num, -1));
-	}
-	else {										//있을때
-		vertexInfo[vertex1].near_face[vertex13] =
-			glm::vec2(vertexInfo[vertex1].near_face[vertex13].x, face_num);
-	}
-
-
-
-	auto vertex2_begin = vertexInfo[vertex2].near_vertex.begin();
-	auto vertex2_end = vertexInfo[vertex2].near_vertex.end();
-	vector<int>::iterator iter21 = find(vertex2_begin, vertex2_end, vertex1);
-	int vertex21 = distance(vertex2_begin, iter21);
-
-	if (vertex21 == vertexInfo[vertex2].near_vertex.size()) {	//기존에 vertex2의 near vertex에 vertex1가 없을때
-		vertexInfo[vertex2].near_vertex.push_back(vertex1);
-		vertexInfo[vertex2].near_face.push_back(glm::vec2(face_num, -1));
-	}
-	else {										//있을때
-		vertexInfo[vertex2].near_face[vertex21] =
-			glm::vec2(vertexInfo[vertex2].near_face[vertex21].x, face_num);
-	}
-
-	auto vertex2_begin2 = vertexInfo[vertex2].near_vertex.begin();
-	auto vertex2_end2 = vertexInfo[vertex2].near_vertex.end();
-	vector<int>::iterator iter23 = find(vertex2_begin2, vertex2_end2, vertex3);
-	int vertex23 = distance(vertex2_begin2, iter23);
-
-	if (vertex23 == vertexInfo[vertex2].near_vertex.size()) {	//2 3 x
-		vertexInfo[vertex2].near_vertex.push_back(vertex3);
-		vertexInfo[vertex2].near_face.push_back(glm::vec2(face_num, -1));
-	}
-	else {										//있을때
-		vertexInfo[vertex2].near_face[vertex23] =
-			glm::vec2(vertexInfo[vertex2].near_face[vertex23].x, face_num);
-	}
-
-
-
-	auto vertex3_begin = vertexInfo[vertex3].near_vertex.begin();
-	auto vertex3_end = vertexInfo[vertex3].near_vertex.end();
-	vector<int>::iterator iter31 = find(vertex3_begin, vertex3_end, vertex1);
-	int vertex31 = distance(vertex3_begin, iter31);
-
-	if (vertex31 == vertexInfo[vertex3].near_vertex.size()) {	//기존에 vertex3의 near vertex에 vertex1가 없을때
-		vertexInfo[vertex3].near_vertex.push_back(vertex1);
-		vertexInfo[vertex3].near_face.push_back(glm::vec2(face_num, -1));
-	}
-	else {										//있을때
-		vertexInfo[vertex3].near_face[vertex31] =
-			glm::vec2(vertexInfo[vertex3].near_face[vertex31].x, face_num);
-	}
-
-	auto vertex3_begin2 = vertexInfo[vertex3].near_vertex.begin();
-	auto vertex3_end2 = vertexInfo[vertex3].near_vertex.end();
-	vector<int>::iterator iter32 = find(vertex3_begin2, vertex3_end2, vertex2);
-	int vertex32 = distance(vertex3_begin2, iter32);
-
-	if (vertex32 == vertexInfo[vertex3].near_vertex.size()) {	//3 2 x
-		vertexInfo[vertex3].near_vertex.push_back(vertex2);
-		vertexInfo[vertex3].near_face.push_back(glm::vec2(face_num, -1));
-	}
-	else {										//있을때
-		vertexInfo[vertex3].near_face[vertex32] =
-			glm::vec2(vertexInfo[vertex3].near_face[vertex32].x, face_num);
-	}
 
 };
 void calc_normal(int num,int vertex_n1, int vertex_n2, int vertex_n3) {
-	glm::vec3 vec2_1, vec3_1;
+	if (subwindow_num == 1) {
+		glm::vec3 vec2_1, vec3_1;
 
-	vec2_1 = obj_vertices[vertex_n2] - obj_vertices[vertex_n1];
-	vec3_1 = obj_vertices[vertex_n3] - obj_vertices[vertex_n1];
-	
-	double vx = vec2_1.y*vec3_1.z - vec2_1.z*vec3_1.y;
-	double vy = vec2_1.z*vec3_1.x - vec2_1.x*vec3_1.z;
-	double vz = vec2_1.x*vec3_1.y - vec2_1.y*vec3_1.x;
-	glm::vec3 normal=glm::normalize(glm::vec3(vx,vy,vz));
+		vec2_1 = obj_vertices[vertex_n2] - obj_vertices[vertex_n1];
+		vec3_1 = obj_vertices[vertex_n3] - obj_vertices[vertex_n1];
+
+		double vx = vec2_1.y*vec3_1.z - vec2_1.z*vec3_1.y;
+		double vy = vec2_1.z*vec3_1.x - vec2_1.x*vec3_1.z;
+		double vz = vec2_1.x*vec3_1.y - vec2_1.y*vec3_1.x;
+		glm::vec3 normal = glm::normalize(glm::vec3(vx, vy, vz));
 
 
-	vertexInfo[num].normal_vec += normal;
-	vertexInfo[num].normal_count++;
+		vertexInfo[num].normal_vec += normal;
+		vertexInfo[num].normal_count++;
+	}
+	else if (subwindow_num == 2) {
+
+		glm::vec3 vec2_1, vec3_1;
+
+		vec2_1 = obj_vertices2[vertex_n2] - obj_vertices2[vertex_n1];
+		vec3_1 = obj_vertices2[vertex_n3] - obj_vertices2[vertex_n1];
+
+		double vx = vec2_1.y*vec3_1.z - vec2_1.z*vec3_1.y;
+		double vy = vec2_1.z*vec3_1.x - vec2_1.x*vec3_1.z;
+		double vz = vec2_1.x*vec3_1.y - vec2_1.y*vec3_1.x;
+		glm::vec3 normal = glm::normalize(glm::vec3(vx, vy, vz));
+
+
+		vertexInfo2[num].normal_vec += normal;
+		vertexInfo2[num].normal_count++;
+	}
 };
 void calc_sin(int num, int vertex) {
-	glm::vec3 normal = vertexInfo[num].normal_vec;
-	glm::vec3 vertexV = obj_vertices[num];	//기준 vertex
-	glm::vec3 vertexX = obj_vertices[vertex]; //인접한 vertex
+	if (subwindow_num == 1) {
+		glm::vec3 normal = vertexInfo[num].normal_vec;
+		glm::vec3 vertexV = obj_vertices[num];	//기준 vertex
+		glm::vec3 vertexX = obj_vertices[vertex]; //인접한 vertex
 
-	glm::vec3 vertexX_V = vertexX - vertexV;
-	double XdotN = vertexX.x*normal.x + vertexX.y*normal.y + vertexX.z*normal.z;
-	double VdotN = vertexV.x*normal.x + vertexV.y*normal.y + vertexV.z*normal.z;
+		glm::vec3 vertexX_V = vertexX - vertexV;
+		double XdotN = vertexX.x*normal.x + vertexX.y*normal.y + vertexX.z*normal.z;
+		double VdotN = vertexV.x*normal.x + vertexV.y*normal.y + vertexV.z*normal.z;
 
-	double XdotN_VdotN = abs(XdotN - VdotN);
-	
-	double ta = sqrt(vertexX_V.x*vertexX_V.x + vertexX_V.y*vertexX_V.y + vertexX_V.z*vertexX_V.z);
-	double tb = XdotN_VdotN;
-	double tbta = tb / ta;
+		double XdotN_VdotN = abs(XdotN - VdotN);
 
-	vertexInfo[num].calc_curv += tb / ta;
-	vertexInfo[num].calc_count++;
+		double ta = sqrt(vertexX_V.x*vertexX_V.x + vertexX_V.y*vertexX_V.y + vertexX_V.z*vertexX_V.z);
+		double tb = XdotN_VdotN;
+		double tbta = tb / ta;
+
+		vertexInfo[num].calc_curv += tb / ta;
+		vertexInfo[num].calc_count++;
+	}
+	else if (subwindow_num == 2) {
+		glm::vec3 normal = vertexInfo2[num].normal_vec;
+		glm::vec3 vertexV = obj_vertices2[num];	//기준 vertex
+		glm::vec3 vertexX = obj_vertices2[vertex]; //인접한 vertex
+
+		glm::vec3 vertexX_V = vertexX - vertexV;
+		double XdotN = vertexX.x*normal.x + vertexX.y*normal.y + vertexX.z*normal.z;
+		double VdotN = vertexV.x*normal.x + vertexV.y*normal.y + vertexV.z*normal.z;
+
+		double XdotN_VdotN = abs(XdotN - VdotN);
+
+		double ta = sqrt(vertexX_V.x*vertexX_V.x + vertexX_V.y*vertexX_V.y + vertexX_V.z*vertexX_V.z);
+		double tb = XdotN_VdotN;
+		double tbta = tb / ta;
+
+		vertexInfo2[num].calc_curv += tb / ta;
+		vertexInfo2[num].calc_count++;
+	}
 
 
 };
@@ -273,82 +418,166 @@ void calc_sin2(int num, int face) {
 	vertexInfo[num].calc_count++;
 };
 void calc_color() {
-	for (int i = 0; i < vertex_count; i++) {
-		int near_vertex_count = vertexInfo[i].near_vertex.size();
-		vertexInfo[i].near_vertex_count = near_vertex_count;	
-		for (int j = 0; j < near_vertex_count; j++) {
-			int first_face = (int)vertexInfo[i].near_face[j].x;
-			int second_face = (int)vertexInfo[i].near_face[j].y;
-			auto vertexInfo_face_begin = vertexInfo[i].near_face_2.begin();
-			auto vertexInfo_face_end = vertexInfo[i].near_face_2.end();
-			if (first_face != -1 ) {
-				vector<int>::iterator first_face_check = find(vertexInfo_face_begin, vertexInfo_face_end, first_face);
-				vector<int>::iterator second_face_check = find(vertexInfo_face_begin, vertexInfo_face_end, second_face);
-				int check_face_1 = distance(vertexInfo_face_begin, first_face_check);
-				int check_face_2 = distance(vertexInfo_face_begin, second_face_check);
+	cout << subwindow_num << endl;
+	if (subwindow_num == 1) {
 
-				if (check_face_1 == vertexInfo[i].near_face_2.size()) {	//1번째 face가 이미 계산되었는지 확인
-					vertexInfo[i].near_face_2.push_back(first_face);
+		for (int i = 0; i < vertex_count; i++) {
+			int near_vertex_count = vertexInfo[i].near_vertex.size();
+			vertexInfo[i].near_vertex_count = near_vertex_count;
+			for (int j = 0; j < near_vertex_count; j++) {
+				int first_face = (int)vertexInfo[i].near_face[j].x;
+				int second_face = (int)vertexInfo[i].near_face[j].y;
+				auto vertexInfo_face_begin = vertexInfo[i].near_face_2.begin();
+				auto vertexInfo_face_end = vertexInfo[i].near_face_2.end();
+				if (first_face != -1) {
+					vector<int>::iterator first_face_check = find(vertexInfo_face_begin, vertexInfo_face_end, first_face);
+					vector<int>::iterator second_face_check = find(vertexInfo_face_begin, vertexInfo_face_end, second_face);
+					int check_face_1 = distance(vertexInfo_face_begin, first_face_check);
+					int check_face_2 = distance(vertexInfo_face_begin, second_face_check);
 
-					int vertex_n11 = vertexIndices[(first_face - 1) * 3];
-					int vertex_n12 = vertexIndices[(first_face - 1) * 3 + 1];
-					int vertex_n13 = vertexIndices[(first_face - 1) * 3 + 2];
+					if (check_face_1 == vertexInfo[i].near_face_2.size()) {	//1번째 face가 이미 계산되었는지 확인
+						vertexInfo[i].near_face_2.push_back(first_face);
 
-					calc_normal(i, vertex_n11, vertex_n12, vertex_n13); // i가 일정하지않나에 대한 의문.ㅡㅡㅡ
+						int vertex_n11 = vertexIndices[(first_face - 1) * 3];
+						int vertex_n12 = vertexIndices[(first_face - 1) * 3 + 1];
+						int vertex_n13 = vertexIndices[(first_face - 1) * 3 + 2];
 
-					continue;
+						calc_normal(i, vertex_n11, vertex_n12, vertex_n13); // i가 일정하지않나에 대한 의문.ㅡㅡㅡ
+
+						continue;
+					}
+					else if (check_face_2 == vertexInfo[i].near_face_2.size() && second_face != -1) {
+						vertexInfo[i].near_face_2.push_back(second_face);
+
+						int vertex_n11 = vertexIndices[(second_face - 1) * 3];
+						int vertex_n12 = vertexIndices[(second_face - 1) * 3 + 1];
+						int vertex_n13 = vertexIndices[(second_face - 1) * 3 + 2];
+
+						calc_normal(i, vertex_n11, vertex_n12, vertex_n13);
+
+						continue;
+					}
 				}
-				else if(check_face_2 == vertexInfo[i].near_face_2.size() && second_face != -1){
-					vertexInfo[i].near_face_2.push_back(second_face);
+				if (second_face != -1) {
+					vector<int>::iterator second_face_check = find(vertexInfo_face_begin, vertexInfo_face_end, second_face);
+					int check_face_2 = distance(vertexInfo_face_begin, second_face_check);
+					if (check_face_2 == vertexInfo[i].near_face_2.size()) {
 
-					int vertex_n11 = vertexIndices[(second_face - 1) * 3];
-					int vertex_n12 = vertexIndices[(second_face - 1) * 3 + 1];
-					int vertex_n13 = vertexIndices[(second_face - 1) * 3 + 2];
+						vertexInfo[i].near_face_2.push_back(second_face);
 
-					calc_normal(i, vertex_n11, vertex_n12, vertex_n13);
+						int vertex_n21 = vertexIndices[(second_face - 1) * 3];
+						int vertex_n22 = vertexIndices[(second_face - 1) * 3 + 1];
+						int vertex_n23 = vertexIndices[(second_face - 1) * 3 + 2];
 
-					continue;
+						calc_normal(i, vertex_n21, vertex_n22, vertex_n23);
+
+						continue;
+					}
+
 				}
 			}
-			if (second_face != -1) {
-				vector<int>::iterator second_face_check = find(vertexInfo_face_begin, vertexInfo_face_end, second_face);
-				int check_face_2 = distance(vertexInfo_face_begin, second_face_check);
-				if (check_face_2 == vertexInfo[i].near_face_2.size()) {
+			float normal_count = vertexInfo[i].normal_count;
+			vertexInfo[i].normal_vec = glm::normalize(glm::vec3(vertexInfo[i].normal_vec.x / normal_count,
+				vertexInfo[i].normal_vec.y / normal_count, vertexInfo[i].normal_vec.z / normal_count));
 
-					vertexInfo[i].near_face_2.push_back(second_face);
-
-					int vertex_n21 = vertexIndices[(second_face - 1) * 3];
-					int vertex_n22 = vertexIndices[(second_face - 1) * 3 + 1];
-					int vertex_n23 = vertexIndices[(second_face - 1) * 3 + 2];
-
-					calc_normal(i, vertex_n21, vertex_n22, vertex_n23);
-					
-					continue;
-				}
-				
+			//--------------use calc sin--------------
+			for (int j = 0; j < near_vertex_count; j++) {
+				int k = vertexInfo[i].near_vertex[j];
+				calc_sin(i, k);
 			}
-		}
-		float normal_count = vertexInfo[i].normal_count;
-		vertexInfo[i].normal_vec = glm::normalize(glm::vec3 (vertexInfo[i].normal_vec.x/normal_count ,
-			vertexInfo[i].normal_vec.y / normal_count, vertexInfo[i].normal_vec.z / normal_count));
+			vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);
+			vertexInfo[i].calc_curv = vertexInfo[i].calc_curv * 2;
 
-		//--------------use calc sin--------------
-		for (int j = 0; j < near_vertex_count; j++) {
-			int k = vertexInfo[i].near_vertex[j];
-			calc_sin(i, k);
-		}
-		vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);
-		vertexInfo[i].calc_curv = vertexInfo[i].calc_curv * 3;
+			//--------------use calc sin2--------------
+			/*for (int j = 0; j < vertexInfo[i].near_face_2.size(); j++) {
+				calc_sin2(i, vertexInfo[i].near_face_2[j]);
+			}
+			vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);
+			vertexInfo[i].calc_curv = sqrt(1 - vertexInfo[i].calc_curv*vertexInfo[i].calc_curv)*1.5;		//chagne cos to sin
+			*/
 
-		//--------------use calc sin2--------------
-		/*for (int j = 0; j < vertexInfo[i].near_face_2.size(); j++) {
-			calc_sin2(i, vertexInfo[i].near_face_2[j]);
+			aColor.push_back(glm::vec3(vertexInfo[i].calc_curv, 0., 0.));
 		}
-		vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);
-		vertexInfo[i].calc_curv = sqrt(1 - vertexInfo[i].calc_curv*vertexInfo[i].calc_curv)*1.5;		//chagne cos to sin
-		*/
+	}
+	else if (subwindow_num == 2) {
 
-		aColor.push_back(glm::vec3(vertexInfo[i].calc_curv,0.,0.));
+		for (int i = 0; i < vertex_count2; i++) {
+			int near_vertex_count = vertexInfo2[i].near_vertex.size();
+			vertexInfo2[i].near_vertex_count = near_vertex_count;
+			for (int j = 0; j < near_vertex_count; j++) {
+				int first_face = (int)vertexInfo2[i].near_face[j].x;
+				int second_face = (int)vertexInfo2[i].near_face[j].y;
+				auto vertexInfo2_face_begin = vertexInfo2[i].near_face_2.begin();
+				auto vertexInfo2_face_end = vertexInfo2[i].near_face_2.end();
+				if (first_face != -1) {
+					vector<int>::iterator first_face_check = find(vertexInfo2_face_begin, vertexInfo2_face_end, first_face);
+					vector<int>::iterator second_face_check = find(vertexInfo2_face_begin, vertexInfo2_face_end, second_face);
+					int check_face_1 = distance(vertexInfo2_face_begin, first_face_check);
+					int check_face_2 = distance(vertexInfo2_face_begin, second_face_check);
+
+					if (check_face_1 == vertexInfo2[i].near_face_2.size()) {	//1번째 face가 이미 계산되었는지 확인
+						vertexInfo2[i].near_face_2.push_back(first_face);
+
+						int vertex_n11 = vertexIndices2[(first_face - 1) * 3];
+						int vertex_n12 = vertexIndices2[(first_face - 1) * 3 + 1];
+						int vertex_n13 = vertexIndices2[(first_face - 1) * 3 + 2];
+
+						calc_normal(i, vertex_n11, vertex_n12, vertex_n13); // i가 일정하지않나에 대한 의문.ㅡㅡㅡ
+
+						continue;
+					}
+					else if (check_face_2 == vertexInfo2[i].near_face_2.size() && second_face != -1) {
+						vertexInfo2[i].near_face_2.push_back(second_face);
+
+						int vertex_n11 = vertexIndices2[(second_face - 1) * 3];
+						int vertex_n12 = vertexIndices2[(second_face - 1) * 3 + 1];
+						int vertex_n13 = vertexIndices2[(second_face - 1) * 3 + 2];
+
+						calc_normal(i, vertex_n11, vertex_n12, vertex_n13);
+
+						continue;
+					}
+				}
+				if (second_face != -1) {
+					vector<int>::iterator second_face_check = find(vertexInfo2_face_begin, vertexInfo2_face_end, second_face);
+					int check_face_2 = distance(vertexInfo2_face_begin, second_face_check);
+					if (check_face_2 == vertexInfo2[i].near_face_2.size()) {
+
+						vertexInfo2[i].near_face_2.push_back(second_face);
+
+						int vertex_n21 = vertexIndices2[(second_face - 1) * 3];
+						int vertex_n22 = vertexIndices2[(second_face - 1) * 3 + 1];
+						int vertex_n23 = vertexIndices2[(second_face - 1) * 3 + 2];
+
+						calc_normal(i, vertex_n21, vertex_n22, vertex_n23);
+
+						continue;
+					}
+
+				}
+			}
+			float normal_count = vertexInfo2[i].normal_count;
+			vertexInfo2[i].normal_vec = glm::normalize(glm::vec3(vertexInfo2[i].normal_vec.x / normal_count,
+				vertexInfo2[i].normal_vec.y / normal_count, vertexInfo2[i].normal_vec.z / normal_count));
+
+			//--------------use calc sin--------------
+			for (int j = 0; j < near_vertex_count; j++) {
+				int k = vertexInfo2[i].near_vertex[j];
+				calc_sin(i, k);
+			}
+			vertexInfo2[i].calc_curv = (vertexInfo2[i].calc_curv / vertexInfo2[i].calc_count);
+			vertexInfo2[i].calc_curv = vertexInfo2[i].calc_curv * 2;
+
+			//--------------use calc sin2--------------
+			/*for (int j = 0; j < vertexInfo2[i].near_face_2.size(); j++) {
+				calc_sin2(i, vertexInfo2[i].near_face_2[j]);
+			}
+			vertexInfo2[i].calc_curv = (vertexInfo2[i].calc_curv / vertexInfo2[i].calc_count);
+			vertexInfo2[i].calc_curv = sqrt(1 - vertexInfo2[i].calc_curv*vertexInfo2[i].calc_curv)*1.5;		//chagne cos to sin
+			*/
+
+			aColor2.push_back(glm::vec3(vertexInfo2[i].calc_curv, 0., 0.));
+		}
 	}
 };
 void calc_box_color() {
@@ -415,11 +644,74 @@ void calc_box_color() {
 			}
 			break;
 		}
-
-
 	}
 }
+void calc_box_color2() {
 
+	bColor2.clear();
+	int How = HowDrawBox(StartmouseX2, StartmouseY2, EndmouseX2, EndmouseY2);
+
+	for (int i = 0; i < vertex_count2; i++) {
+		vPos2 = glm::vec4(obj_vertices2[i], 1.);
+		vPos2 = realMat2 * vPos2;
+
+		switch (How)
+		{
+		case 1: //우측 상단으로 선택
+			if ((StartmouseX2 <= vPos2.x) && (vPos2.x <= EndmouseX2)) {
+				if ((StartmouseY2 <= vPos2.y) && (vPos2.y <= EndmouseY2)) {
+					bColor2.push_back(glm::vec3(0.74, 1., 0.));
+				}
+				else {
+					bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+				}
+			}
+			else {
+				bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+			}
+			break;
+		case 2: //우측 하단으로 선택
+			if ((StartmouseX2 <= vPos2.x) && (vPos2.x <= EndmouseX2)) {
+				if ((EndmouseY2 <= vPos2.y) && (vPos2.y <= StartmouseY2)) {
+					bColor2.push_back(glm::vec3(0.74, 1., 0.));
+				}
+				else {
+					bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+				}
+			}
+			else {
+				bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+			}
+			break;
+		case 3: //좌측 상단으로 선택
+			if ((EndmouseX2 <= vPos2.x) && (vPos2.x <= StartmouseX2)) {
+				if ((StartmouseY2 <= vPos2.y) && (vPos2.y <= EndmouseY2)) {
+					bColor2.push_back(glm::vec3(0.74, 1., 0.));
+				}
+				else {
+					bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+				}
+			}
+			else {
+				bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+			}
+			break;
+		case 4: //좌측 하단으로 선택
+			if ((EndmouseX2 <= vPos2.x) && (vPos2.x <= StartmouseX2)) {
+				if ((EndmouseY2 <= vPos2.y) && (vPos2.y <= StartmouseY2)) {
+					bColor2.push_back(glm::vec3(0.74, 1., 0.));
+				}
+				else {
+					bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+				}
+			}
+			else {
+				bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+			}
+			break;
+		}
+	}
+}
 
 int HowDrawBox(float start_X, float start_Y, float End_X, float End_Y) {
 	if (start_X < End_X) {
@@ -589,7 +881,12 @@ void parseMtllib(string line) {
 	onReadMTLFile(mtlpath);
 }
 void parseVertex(string line, float scale) {
-	vertex_count++;
+	if (subwindow_num == 1) {
+		vertex_count++;
+	}
+	else if (subwindow_num == 2) {
+		vertex_count2++;
+	}
 	string sub_line = line;
 	string word;
 	int blank_index;
@@ -619,7 +916,13 @@ void parseVertex(string line, float scale) {
 			//cout << word << endl;
 			if (count == 2) {
 				vertex.z = stof(word) * scale;
-				obj_vertices.push_back(vertex);
+				if (subwindow_num == 1) {
+					obj_vertices.push_back(vertex);
+				}
+				else {
+					obj_vertices2.push_back(vertex);
+				}
+				
 			}
 			break;
 		}
@@ -655,7 +958,12 @@ void parseNormal(string line) {
 			//cout << word << endl;
 			if (count == 2) {
 				normal.z = stof(word);
-				obj_normals.push_back(normal);
+				if (subwindow_num == 1) {
+					obj_normals.push_back(normal);
+				}
+				else {
+					obj_normals2.push_back(normal);
+				}
 			}
 			break;
 		}
@@ -687,7 +995,11 @@ void parseTexcoord(string line) {
 			//cout << word << endl;
 			if (count == 1) {
 				texcoord.y = stof(word);
-				obj_texcoord.push_back(texcoord);
+				if (subwindow_num == 1) {
+					obj_texcoord.push_back(texcoord);
+				}else{
+					obj_texcoord2.push_back(texcoord);
+				}
 			}
 			break;
 		}
@@ -725,9 +1037,20 @@ void parseFace(string line, string currentMaterialName) {
 		slash_index = sub_line[0].find("/");	//check "/"
 		if (slash_index == -1) {				//not exist "/"
 			//cout << "no slash" << endl;
-			vertexIndices.push_back(stoi(sub_line[0]) - 1);
-			vertexIndices.push_back(stoi(sub_line[1]) - 1);
-			vertexIndices.push_back(stoi(sub_line[2]) - 1);
+			if (subwindow_num == 1) {
+				face_count += 1;
+				vertexIndices.push_back(stoi(sub_line[0]) - 1);
+				vertexIndices.push_back(stoi(sub_line[1]) - 1);
+				vertexIndices.push_back(stoi(sub_line[2]) - 1);
+				add_near_vertex( stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count);
+			}
+			else {
+				face_count2 += 1;
+				vertexIndices2.push_back(stoi(sub_line[0]) - 1);
+				vertexIndices2.push_back(stoi(sub_line[1]) - 1);
+				vertexIndices2.push_back(stoi(sub_line[2]) - 1);
+				add_near_vertex( stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count2);
+			}
 		}
 		else {
 			//cout << "slash" << endl;
@@ -751,25 +1074,48 @@ void parseFace(string line, string currentMaterialName) {
 				switch (j) {
 				case 0:
 					if (divide_slash[0].length() != 0) {
-						face_count += 1;
-						vertexIndices.push_back(stoi(divide_slash[0]) - 1);
-						vertexIndices.push_back(stoi(divide_slash[1]) - 1);
-						vertexIndices.push_back(stoi(divide_slash[2]) - 1);
-						add_near_vertex(stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count);
+						if (subwindow_num == 1) {
+							face_count += 1;
+							vertexIndices.push_back(stoi(divide_slash[0]) - 1);
+							vertexIndices.push_back(stoi(divide_slash[1]) - 1);
+							vertexIndices.push_back(stoi(divide_slash[2]) - 1);
+							add_near_vertex( stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count);
+						}
+						else {
+							face_count2 += 1;
+							vertexIndices2.push_back(stoi(divide_slash[0]) - 1);
+							vertexIndices2.push_back(stoi(divide_slash[1]) - 1);
+							vertexIndices2.push_back(stoi(divide_slash[2]) - 1);
+							add_near_vertex( stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count2);
+						}
 					}
 					break;
 				case 1:
 					if (divide_slash[0].length() != 0) {
-						texIndices.push_back(stoi(divide_slash[0]) - 1);
-						texIndices.push_back(stoi(divide_slash[1]) - 1);
-						texIndices.push_back(stoi(divide_slash[2]) - 1);
+						if (subwindow_num == 1) {
+							texIndices.push_back(stoi(divide_slash[0]) - 1);
+							texIndices.push_back(stoi(divide_slash[1]) - 1);
+							texIndices.push_back(stoi(divide_slash[2]) - 1);
+						}
+						else {
+							texIndices2.push_back(stoi(divide_slash[0]) - 1);
+							texIndices2.push_back(stoi(divide_slash[1]) - 1);
+							texIndices2.push_back(stoi(divide_slash[2]) - 1);
+						}
 					}
 					break;
 				case 2:
 					if (divide_slash[0].length() != 0) {
-						normalIndices.push_back(stoi(divide_slash[0]) - 1);
-						normalIndices.push_back(stoi(divide_slash[1]) - 1);
-						normalIndices.push_back(stoi(divide_slash[2]) - 1);
+						if (subwindow_num == 1) {
+							normalIndices.push_back(stoi(divide_slash[0]) - 1);
+							normalIndices.push_back(stoi(divide_slash[1]) - 1);
+							normalIndices.push_back(stoi(divide_slash[2]) - 1);
+						}
+						else {
+							normalIndices2.push_back(stoi(divide_slash[0]) - 1);
+							normalIndices2.push_back(stoi(divide_slash[1]) - 1);
+							normalIndices2.push_back(stoi(divide_slash[2]) - 1);
+						}
 					}
 					break;
 				}
@@ -783,13 +1129,35 @@ void parseFace(string line, string currentMaterialName) {
 		slash_index = sub_line[0].find("/");
 		if (slash_index == -1) {				//not exist "/"
 			//cout << "no slash" << endl;
-			vertexIndices.push_back(stoi(sub_line[0]) - 1);
-			vertexIndices.push_back(stoi(sub_line[1]) - 1);
-			vertexIndices.push_back(stoi(sub_line[2]) - 1);
+			if (subwindow_num == 1) {
+				face_count += 1;
+				vertexIndices.push_back(stoi(sub_line[0]) - 1);
+				vertexIndices.push_back(stoi(sub_line[1]) - 1);
+				vertexIndices.push_back(stoi(sub_line[2]) - 1);
+				add_near_vertex(stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count);
+			}
+			else {
+				face_count2 += 1;
+				vertexIndices2.push_back(stoi(sub_line[0]) - 1);
+				vertexIndices2.push_back(stoi(sub_line[1]) - 1);
+				vertexIndices2.push_back(stoi(sub_line[2]) - 1);
+				add_near_vertex(stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count2);
+			}
 
-			vertexIndices.push_back(stoi(sub_line[0]) - 1);
-			vertexIndices.push_back(stoi(sub_line[2]) - 1);
-			vertexIndices.push_back(stoi(sub_line[3]) - 1);
+			if (subwindow_num == 1) {
+				face_count += 1;
+				vertexIndices.push_back(stoi(sub_line[0]) - 1);
+				vertexIndices.push_back(stoi(sub_line[2]) - 1);
+				vertexIndices.push_back(stoi(sub_line[3]) - 1);
+				add_near_vertex(stoi(sub_line[0]) - 1, stoi(sub_line[2]) - 1, stoi(sub_line[3]) - 1, face_count);
+			}
+			else {
+				face_count2 += 1;
+				vertexIndices2.push_back(stoi(sub_line[0]) - 1);
+				vertexIndices2.push_back(stoi(sub_line[2]) - 1);
+				vertexIndices2.push_back(stoi(sub_line[3]) - 1);
+				add_near_vertex(stoi(sub_line[0]) - 1, stoi(sub_line[2]) - 1, stoi(sub_line[3]) - 1, face_count2);
+			}
 		}
 		else {
 			//cout << "slash" << endl;
@@ -811,35 +1179,75 @@ void parseFace(string line, string currentMaterialName) {
 				}
 				switch (j) {
 				case 0:
-					face_count += 1;
-					vertexIndices.push_back(stoi(divide_slash[0]) - 1);
-					vertexIndices.push_back(stoi(divide_slash[1]) - 1);
-					vertexIndices.push_back(stoi(divide_slash[2]) - 1);
-					add_near_vertex(stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count);
+					if (subwindow_num == 1) {
+						face_count += 1;
+						vertexIndices.push_back(stoi(divide_slash[0]) - 1);
+						vertexIndices.push_back(stoi(divide_slash[1]) - 1);
+						vertexIndices.push_back(stoi(divide_slash[2]) - 1);
+						add_near_vertex(stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count);
+					}
+					else {
+						face_count2 += 1;
+						vertexIndices2.push_back(stoi(divide_slash[0]) - 1);
+						vertexIndices2.push_back(stoi(divide_slash[1]) - 1);
+						vertexIndices2.push_back(stoi(divide_slash[2]) - 1);
+						add_near_vertex(stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count2);
+					}
 
-					face_count += 1;
-					vertexIndices.push_back(stoi(divide_slash[0]) - 1);
-					vertexIndices.push_back(stoi(divide_slash[2]) - 1);
-					vertexIndices.push_back(stoi(divide_slash[3]) - 1);
-					add_near_vertex(stoi(divide_slash[0]) - 1, stoi(divide_slash[2]) - 1, stoi(divide_slash[3]) - 1, face_count);
+					if (subwindow_num == 1) {
+						face_count += 1;
+						vertexIndices.push_back(stoi(divide_slash[0]) - 1);
+						vertexIndices.push_back(stoi(divide_slash[2]) - 1);
+						vertexIndices.push_back(stoi(divide_slash[3]) - 1);
+						add_near_vertex(stoi(divide_slash[0]) - 1, stoi(divide_slash[2]) - 1, stoi(divide_slash[3]) - 1, face_count);
+					}
+					else {
+						face_count2 += 1;
+						vertexIndices2.push_back(stoi(divide_slash[0]) - 1);
+						vertexIndices2.push_back(stoi(divide_slash[2]) - 1);
+						vertexIndices2.push_back(stoi(divide_slash[3]) - 1);
+						add_near_vertex( stoi(divide_slash[0]) - 1, stoi(divide_slash[2]) - 1, stoi(divide_slash[3]) - 1, face_count2);
+					}
 					break;
 				case 1:
-					texIndices.push_back(stoi(divide_slash[0]) - 1);
-					texIndices.push_back(stoi(divide_slash[1]) - 1);
-					texIndices.push_back(stoi(divide_slash[2]) - 1);
+					if (subwindow_num == 1) {
+						texIndices.push_back(stoi(divide_slash[0]) - 1);
+						texIndices.push_back(stoi(divide_slash[1]) - 1);
+						texIndices.push_back(stoi(divide_slash[2]) - 1);
 
-					texIndices.push_back(stoi(divide_slash[0]) - 1);
-					texIndices.push_back(stoi(divide_slash[2]) - 1);
-					texIndices.push_back(stoi(divide_slash[3]) - 1);
+						texIndices.push_back(stoi(divide_slash[0]) - 1);
+						texIndices.push_back(stoi(divide_slash[2]) - 1);
+						texIndices.push_back(stoi(divide_slash[3]) - 1);
+					}
+					else {
+						texIndices2.push_back(stoi(divide_slash[0]) - 1);
+						texIndices2.push_back(stoi(divide_slash[1]) - 1);
+						texIndices2.push_back(stoi(divide_slash[2]) - 1);
+
+						texIndices2.push_back(stoi(divide_slash[0]) - 1);
+						texIndices2.push_back(stoi(divide_slash[2]) - 1);
+						texIndices2.push_back(stoi(divide_slash[3]) - 1);
+					}
 					break;
 				case 2:
-					normalIndices.push_back(stoi(divide_slash[0]) - 1);
-					normalIndices.push_back(stoi(divide_slash[1]) - 1);
-					normalIndices.push_back(stoi(divide_slash[2]) - 1);
+					if (subwindow_num == 1) {
+						normalIndices.push_back(stoi(divide_slash[0]) - 1);
+						normalIndices.push_back(stoi(divide_slash[1]) - 1);
+						normalIndices.push_back(stoi(divide_slash[2]) - 1);
 
-					normalIndices.push_back(stoi(divide_slash[0]) - 1);
-					normalIndices.push_back(stoi(divide_slash[2]) - 1);
-					normalIndices.push_back(stoi(divide_slash[3]) - 1);
+						normalIndices.push_back(stoi(divide_slash[0]) - 1);
+						normalIndices.push_back(stoi(divide_slash[2]) - 1);
+						normalIndices.push_back(stoi(divide_slash[3]) - 1);
+					}
+					else {
+						normalIndices2.push_back(stoi(divide_slash[0]) - 1);
+						normalIndices2.push_back(stoi(divide_slash[1]) - 1);
+						normalIndices2.push_back(stoi(divide_slash[2]) - 1);
+
+						normalIndices2.push_back(stoi(divide_slash[0]) - 1);
+						normalIndices2.push_back(stoi(divide_slash[2]) - 1);
+						normalIndices2.push_back(stoi(divide_slash[3]) - 1);
+					}
 					break;
 				}
 				j++;
@@ -883,9 +1291,15 @@ void loadObj(string path, float scale) {
 		}
 		else if (first_word == "f") {
 
-			if (first_f_check == 0) {
-				vertexInfo = new vertex_info[vertex_count];
-				first_f_check = 1;
+			if (first_f_check == 0 ) {
+				if (subwindow_num == 1) {
+					vertexInfo = new vertex_info[vertex_count];
+					first_f_check = 1;
+				}
+				else {
+					vertexInfo2 = new vertex_info[vertex_count2];
+					first_f_check = 1;
+				}
 			}
 			parseFace(line, currentMaterialName);
 		}
@@ -893,6 +1307,7 @@ void loadObj(string path, float scale) {
 }
 
 void updateViewmat() {
+
 	tiltmat = glm::rotate(tiltRad * TO_RADIAN, glm::vec3(1.0f, 0, 0));
 	rotmat = glm::rotate(panRad * TO_RADIAN, glm::vec3(0, 1.0f, 0));
 	transmat = glm::translate(glm::vec3(transX, transY, transZ));
@@ -901,6 +1316,18 @@ void updateViewmat() {
 
 	realMat = viewmat * wmat;
 	realMat = projectmat * realMat;
+
+
+
+	tiltmat2 = glm::rotate(tiltRad2 * TO_RADIAN, glm::vec3(1.0f, 0, 0));
+	rotmat2 = glm::rotate(panRad2 * TO_RADIAN, glm::vec3(0, 1.0f, 0));
+	transmat2 = glm::translate(glm::vec3(transX2, transY2, transZ2));
+
+	viewmat2 = glm::inverse(transmat2) * glm::transpose(tiltmat2 * rotmat2);
+
+	realMat2 = viewmat2 * wmat2;
+	realMat2 = projectmat2 * realMat2;
+
 }
 GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 {
@@ -995,204 +1422,407 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 
 void renderScene(void)
 {
-	//Clear all pixels
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	//Let's draw something here
+		//Clear all pixels
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LESS);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		//Let's draw something here
 
-	//define the size of point and draw a point.
+		//define the size of point and draw a point.
 
 
-	glUseProgram(programID);
+		glUseProgram(programID);
 
-	GLuint lightPosID = glGetUniformLocation(programID, "uLightPos");
-	glUniform3fv(lightPosID, 1, &lightPos[0]);
+		GLuint lightPosID = glGetUniformLocation(programID, "uLightPos");
+		glUniform3fv(lightPosID, 1, &lightPos[0]);
 
-	GLuint matLoc = glGetUniformLocation(programID, "worldMat");
-	glUniformMatrix4fv(matLoc, 1, GL_FALSE, &wmat[0][0]);
+		GLuint matLoc = glGetUniformLocation(programID, "worldMat");
+		glUniformMatrix4fv(matLoc, 1, GL_FALSE, &wmat[0][0]);
 
-	GLuint viewID = glGetUniformLocation(programID, "viewmat");
-	glUniformMatrix4fv(viewID, 1, GL_FALSE, &viewmat[0][0]);
+		GLuint viewID = glGetUniformLocation(programID, "viewmat");
+		glUniformMatrix4fv(viewID, 1, GL_FALSE, &viewmat[0][0]);
 
-	GLuint projectID = glGetUniformLocation(programID, "projectmat");
-	glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat[0][0]);
+		GLuint projectID = glGetUniformLocation(programID, "projectmat");
+		glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat[0][0]);
 
-	glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
+		glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
 
-	glBindVertexArray(vao[0]);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+		glBindVertexArray(vao[0]);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
-	if (!bColor.empty()) { // 박스를 지정했을 경우
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * bColor.size(), bColor.data(), GL_STATIC_DRAW);
-		GLint bColor = glGetAttribLocation(programID, "a_Color");
-		glVertexAttribPointer(bColor, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
-		glEnableVertexAttribArray(bColor);
-	}
+		if (!bColor.empty()) { // 박스를 지정했을 경우
+			glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * bColor.size(), bColor.data(), GL_STATIC_DRAW);
+			GLint bColor = glGetAttribLocation(programID, "a_Color");
+			glVertexAttribPointer(bColor, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+			glEnableVertexAttribArray(bColor);
+		}
 
-	glDrawElements(GL_TRIANGLES, vertexIndices.size(), GL_UNSIGNED_INT, (void*)0);
-	//glDrawArrays(GL_POINTS, 0, obj_vertices.size());
+		glDrawElements(GL_TRIANGLES, vertexIndices.size(), GL_UNSIGNED_INT, (void*)0);
+		//glDrawArrays(GL_POINTS, 0, obj_vertices.size());
 
-	glUseProgram(programID2);
+		glUseProgram(programID2);
 
-	glBindVertexArray(vao[1]);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_box);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, box_vertices, GL_STATIC_DRAW);
-	GLuint vtxPosition2 = glGetAttribLocation(programID2, "vtxPosition");
-	glVertexAttribPointer(vtxPosition2, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
-	glDrawArrays(GL_LINE_LOOP, 0, 4);
+		glBindVertexArray(vao[1]);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_box);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, box_vertices, GL_STATIC_DRAW);
+		GLuint vtxPosition2 = glGetAttribLocation(programID2, "vtxPosition");
+		glVertexAttribPointer(vtxPosition2, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+		glDrawArrays(GL_LINE_LOOP, 0, 4);
 
-	glUseProgram(programID);
-	//Double buffer
-	glutSwapBuffers();
+		glUseProgram(programID);
+		//Double buffer
+		glutSwapBuffers();
+	
+		
+}
+void renderScene2(void) {
+		//Clear all pixels
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LESS);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		//Let's draw something here
+
+		//define the size of point and draw a point.
+
+
+		glUseProgram(programID);
+
+		GLuint lightPosID = glGetUniformLocation(programID, "uLightPos");
+		glUniform3fv(lightPosID, 1, &lightPos2[0]);
+
+		GLuint matLoc = glGetUniformLocation(programID, "worldMat");
+		glUniformMatrix4fv(matLoc, 1, GL_FALSE, &wmat2[0][0]);
+
+		GLuint viewID = glGetUniformLocation(programID, "viewmat");
+		glUniformMatrix4fv(viewID, 1, GL_FALSE, &viewmat2[0][0]);
+
+		GLuint projectID = glGetUniformLocation(programID, "projectmat");
+		glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat2[0][0]);
+
+		glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff2);
+
+		glBindVertexArray(vao[0]);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+
+		if (!bColor2.empty()) { // 박스를 지정했을 경우
+			glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * bColor2.size(), bColor2.data(), GL_STATIC_DRAW);
+			GLint bColor = glGetAttribLocation(programID, "a_Color");
+			glVertexAttribPointer(bColor, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+			glEnableVertexAttribArray(bColor);
+		}
+
+		glDrawElements(GL_TRIANGLES, vertexIndices2.size(), GL_UNSIGNED_INT, (void*)0);
+		//glDrawArrays(GL_POINTS, 0, obj_vertices.size());
+
+		glUseProgram(programID2);
+
+		glBindVertexArray(vao[1]);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_box);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, box_vertices2, GL_STATIC_DRAW);
+		GLuint vtxPosition2 = glGetAttribLocation(programID2, "vtxPosition");
+		glVertexAttribPointer(vtxPosition2, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+		glDrawArrays(GL_LINE_LOOP, 0, 4);
+
+		glUseProgram(programID);
+		//Double buffer
+		glutSwapBuffers();
 }
 void myKeyboard(unsigned char key, int x, int y) {
-	switch (key) {
-	case '/': 
-		Holding = !Holding;
-		break;
-	case 'o':
-		orthoOn = 1;
-		maxX = 1.0f;
-		minX = -1.0f;
-		maxY = 1.0f;
-		minY = -1.0f;
-		glm::mat4 orthoMat = glm::ortho(minX, maxX, minY, maxY, zNear, zFar);
-
-		projectmat = orthoMat;
-
-		transX = 0.0f;
-		transY = 0.0f;
-		transZ = 2.0f;
-		tiltRad = 0.0f;
-		panRad = 0.0f;
-
-		updateViewmat();
-
-		break;
-	case 'p':
-		orthoOn = 0;
-		persRad = 60;
-
-		glm::mat4 perspectivemat = glm::perspective(persRad * TO_RADIAN, 1.0f, zNear, zFar);
-
-		projectmat = perspectivemat;
-
-		transX = 0.0f;
-		transY = 0.0f;
-		transZ = 2.0f;
-		tiltRad = 0.0f;
-		panRad = 0.0f;
-
-		updateViewmat();
-
-		break;
-	case 'f':   //pan right
-		panRad -= 0.7f;
-		updateViewmat();
-		break;
-	case 'r':   //pan left
-		panRad += 0.7f;
-		updateViewmat();
-		break;
-	case 't':   //tilt up
-		tiltRad += 0.7f;
-		updateViewmat();
-		break;
-	case 'g':   //tilt down
-		tiltRad -= 0.7f;
-		updateViewmat();
-		break;
-	case 'a':   //crab right
-		transX += 0.1f;
-		updateViewmat();
-		break;
-	case 'q':   //crab left
-		transX -= 0.1f;
-		updateViewmat();
-		break;
-	case 'w':   //ped up
-		transY += 0.1f;
-		updateViewmat();
-		break;
-	case 's':   //ped down
-		transY -= 0.1f;
-		updateViewmat();
-		break;
-	case 'y':   //zoom in
-		if (orthoOn == 0) {
-			persRad -= 1.0f;
-			glm::mat4 perspectiveMat = glm::perspective(persRad * TO_RADIAN, 1.0f, zNear, zFar);
-			projectmat = perspectiveMat;
-
-			updateViewmat();
-		}
-		else if (orthoOn == 1) {
-			maxX -= 0.1f;
-			minX += 0.1f;
-			maxY -= 0.1f;
-			minY += 0.1f;
-			orthoMat = glm::ortho(minX, maxX, minY, maxY, zNear, zFar);
-			projectmat = orthoMat;
-		}
-
-		break;
-	case 'h':   //zoom out
-		if (orthoOn == 0) {
-			persRad += 1.0f;
-			glm::mat4 perspectiveMat = glm::perspective(persRad * TO_RADIAN, 1.0f, zNear, zFar);
-			projectmat = perspectiveMat;
-			updateViewmat();
-		}
-		else if (orthoOn == 1) {
-			maxX += 0.1f;
-			minX -= 0.1f;
-			maxY += 0.1f;
-			minY -= 0.1f;
-			orthoMat = glm::ortho(minX, maxX, minY, maxY, zNear, zFar);
+		switch (key) {
+		case '/':
+			Holding = !Holding;
+			break;
+		case 'o':
+			orthoOn = 1;
+			maxX = 1.0f;
+			minX = -1.0f;
+			maxY = 1.0f;
+			minY = -1.0f;
+			glm::mat4 orthoMat = glm::ortho(minX, maxX, minY, maxY, zNear, zFar);
 
 			projectmat = orthoMat;
-		}
-		break;
-	case 'e':   //track in
-		transZ -= 0.05f;
-		updateViewmat();
-		break;
-	case 'd':   //track out
-		transZ += 0.05f;
-		updateViewmat();
-		break;
 
-	case '1':				//light move
-		lightPos.x += 0.2f;
-		break;
-	case '2':
-		lightPos.x -= 0.2f;
-		break;
-	case '3':
-		lightPos.y += 0.2f;
-		break;
-	case '4':
-		lightPos.y -= 0.2f;
-		break;
-	case '5':
-		lightPos.z += 0.2f;
-		break;
-	case '6':
-		lightPos.z -= 0.2f;
-		break;
+			transX = 0.0f;
+			transY = 0.0f;
+			transZ = 2.0f;
+			tiltRad = 0.0f;
+			panRad = 0.0f;
 
-	case 'l':				//light on/off
-		if (lightTurnOnOff == 1) {
-			lightTurnOnOff = 0;
+			updateViewmat();
+
+			break;
+		case 'p':
+			orthoOn = 0;
+			persRad = 60;
+
+			glm::mat4 perspectivemat = glm::perspective(persRad * TO_RADIAN, 1.0f, zNear, zFar);
+
+			projectmat = perspectivemat;
+
+			transX = 0.0f;
+			transY = 0.0f;
+			transZ = 2.0f;
+			tiltRad = 0.0f;
+			panRad = 0.0f;
+
+			updateViewmat();
+
+			break;
+		case 'f':   //pan right
+			panRad -= 0.7f;
+			updateViewmat();
+			break;
+		case 'r':   //pan left
+			panRad += 0.7f;
+			updateViewmat();
+			break;
+		case 't':   //tilt up
+			tiltRad += 0.7f;
+			updateViewmat();
+			break;
+		case 'g':   //tilt down
+			tiltRad -= 0.7f;
+			updateViewmat();
+			break;
+		case 'a':   //crab right
+			transX += 0.1f;
+			updateViewmat();
+			break;
+		case 'q':   //crab left
+			transX -= 0.1f;
+			updateViewmat();
+			break;
+		case 'w':   //ped up
+			transY += 0.1f;
+			updateViewmat();
+			break;
+		case 's':   //ped down
+			transY -= 0.1f;
+			updateViewmat();
+			break;
+		case 'y':   //zoom in
+			if (orthoOn == 0) {
+				persRad -= 1.0f;
+				glm::mat4 perspectiveMat = glm::perspective(persRad * TO_RADIAN, 1.0f, zNear, zFar);
+				projectmat = perspectiveMat;
+
+				updateViewmat();
+			}
+			else if (orthoOn == 1) {
+				maxX -= 0.1f;
+				minX += 0.1f;
+				maxY -= 0.1f;
+				minY += 0.1f;
+				orthoMat = glm::ortho(minX, maxX, minY, maxY, zNear, zFar);
+				projectmat = orthoMat;
+			}
+
+			break;
+		case 'h':   //zoom out
+			if (orthoOn == 0) {
+				persRad += 1.0f;
+				glm::mat4 perspectiveMat = glm::perspective(persRad * TO_RADIAN, 1.0f, zNear, zFar);
+				projectmat = perspectiveMat;
+				updateViewmat();
+			}
+			else if (orthoOn == 1) {
+				maxX += 0.1f;
+				minX -= 0.1f;
+				maxY += 0.1f;
+				minY -= 0.1f;
+				orthoMat = glm::ortho(minX, maxX, minY, maxY, zNear, zFar);
+
+				projectmat = orthoMat;
+			}
+			break;
+		case 'e':   //track in
+			transZ -= 0.05f;
+			updateViewmat();
+			break;
+		case 'd':   //track out
+			transZ += 0.05f;
+			updateViewmat();
+			break;
+
+		case '1':				//light move
+			lightPos.x += 0.2f;
+			break;
+		case '2':
+			lightPos.x -= 0.2f;
+			break;
+		case '3':
+			lightPos.y += 0.2f;
+			break;
+		case '4':
+			lightPos.y -= 0.2f;
+			break;
+		case '5':
+			lightPos.z += 0.2f;
+			break;
+		case '6':
+			lightPos.z -= 0.2f;
+			break;
+
+		case 'l':				//light on/off
+			if (lightTurnOnOff == 1) {
+				lightTurnOnOff = 0;
+			}
+			else {
+				lightTurnOnOff = 1;
+			}
+			glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
+			break;
+		}		
+	glutPostRedisplay();
+}
+void myKeyboard2(unsigned char key, int x, int y) {
+		switch (key) {
+		case '/':
+			Holding = !Holding;
+			break;
+		case 'o':
+			orthoOn2 = 1;
+			maxX2 = 1.0f;
+			minX2 = -1.0f;
+			maxY2 = 1.0f;
+			minY2 = -1.0f;
+			glm::mat4 orthoMat = glm::ortho(minX2, maxX2, minY2, maxY2, zNear2, zFar2);
+
+			projectmat2 = orthoMat;
+
+			transX2 = 0.0f;
+			transY2 = 0.0f;
+			transZ2 = 2.0f;
+			tiltRad2 = 0.0f;
+			panRad2 = 0.0f;
+
+			updateViewmat();
+
+			break;
+		case 'p':
+			orthoOn2 = 0;
+			persRad2 = 60;
+
+			glm::mat4 perspectivemat = glm::perspective(persRad2 * TO_RADIAN, 1.0f, zNear2, zFar2);
+
+			projectmat2 = perspectivemat;
+
+			transX2 = 0.0f;
+			transY2 = 0.0f;
+			transZ2 = 2.0f;
+			tiltRad2 = 0.0f;
+			panRad2 = 0.0f;
+
+			updateViewmat();
+
+			break;
+		case 'f':   //pan right
+			panRad2 -= 0.7f;
+			updateViewmat();
+			break;
+		case 'r':   //pan left
+			panRad2 += 0.7f;
+			updateViewmat();
+			break;
+		case 't':   //tilt up
+			tiltRad2 += 0.7f;
+			updateViewmat();
+			break;
+		case 'g':   //tilt down
+			tiltRad2 -= 0.7f;
+			updateViewmat();
+			break;
+		case 'a':   //crab right
+			transX2 += 0.1f;
+			updateViewmat();
+			break;
+		case 'q':   //crab left
+			transX2 -= 0.1f;
+			updateViewmat();
+			break;
+		case 'w':   //ped up
+			transY2 += 0.1f;
+			updateViewmat();
+			break;
+		case 's':   //ped down
+			transY2 -= 0.1f;
+			updateViewmat();
+			break;
+		case 'y':   //zoom in
+			if (orthoOn2 == 0) {
+				persRad2 -= 1.0f;
+				glm::mat4 perspectiveMat = glm::perspective(persRad2 * TO_RADIAN, 1.0f, zNear2, zFar2);
+				projectmat2 = perspectiveMat;
+
+				updateViewmat();
+			}
+			else if (orthoOn2 == 1) {
+				maxX2 -= 0.1f;
+				minX2 += 0.1f;
+				maxY2 -= 0.1f;
+				minY2 += 0.1f;
+				orthoMat2 = glm::ortho(minX2, maxX2, minY2, maxY2, zNear2, zFar2);
+				projectmat2 = orthoMat2;
+			}
+
+			break;
+		case 'h':   //zoom out
+			if (orthoOn2 == 0) {
+				persRad2 += 1.0f;
+				glm::mat4 perspectiveMat = glm::perspective(persRad2 * TO_RADIAN, 1.0f, zNear2, zFar2);
+				projectmat2 = perspectiveMat;
+				updateViewmat();
+			}
+			else if (orthoOn2 == 1) {
+				maxX2 += 0.1f;
+				minX2 -= 0.1f;
+				maxY2 += 0.1f;
+				minY2 -= 0.1f;
+				orthoMat2 = glm::ortho(minX2, maxX2, minY2, maxY2, zNear2, zFar2);
+
+				projectmat2 = orthoMat2;
+			}
+			break;
+		case 'e':   //track in
+			transZ2 -= 0.05f;
+			updateViewmat();
+			break;
+		case 'd':   //track out
+			transZ2 += 0.05f;
+			updateViewmat();
+			break;
+
+		case '1':				//light move
+			lightPos2.x += 0.2f;
+			break;
+		case '2':
+			lightPos2.x -= 0.2f;
+			break;
+		case '3':
+			lightPos2.y += 0.2f;
+			break;
+		case '4':
+			lightPos2.y -= 0.2f;
+			break;
+		case '5':
+			lightPos2.z += 0.2f;
+			break;
+		case '6':
+			lightPos2.z -= 0.2f;
+			break;
+
+		case 'l':				//light on/off
+			if (lightTurnOnOff2 == 1) {
+				lightTurnOnOff2 = 0;
+			}
+			else {
+				lightTurnOnOff2 = 1;
+			}
+			glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff2);
+			break;
 		}
-		else {
-			lightTurnOnOff = 1;
-		}
-		glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
-		break;
-	}
 	glutPostRedisplay();
 
 }
@@ -1203,65 +1833,86 @@ void myMouseClick(GLint Button, GLint State, int x, int y) {
 		glUseProgram(programID);
 		mouseX = x;
 		mouseY = y;
-		StartmouseX = (float)((x - 0.5 * WINDOW_WIDTH) / (0.5 * WINDOW_WIDTH));
+		StartmouseX = (float)((x - 0.5 * (WINDOW_WIDTH / 2)) / (0.5 * (WINDOW_WIDTH / 2)));
 		StartmouseY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
 	}
 	else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE) { //왼쪽 마우스 뗐을 경우, z값 초기화.
-		
+
 		box_vertices[2] = 1;
 		box_vertices[5] = 1;
 		box_vertices[8] = 1;
 		box_vertices[11] = 1;
-		EndmouseX = (float)((x - 0.5 * WINDOW_WIDTH) / (0.5 * WINDOW_WIDTH));
+		EndmouseX = (float)((x - 0.5 * (WINDOW_WIDTH / 2)) / (0.5 * (WINDOW_WIDTH / 2)));
 		EndmouseY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
 		calc_box_color();
 
 	}
+}
+void myMouseClick2(GLint Button, GLint State, int x, int y) {
+	if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE) { //왼쪽 마우스 버튼을 눌렀을 때, 기준점잡기.
+		glUseProgram(programID2);
+		glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0); //빨간 점으로 표시.
+		glUseProgram(programID);
+		mouseX2 = x;
+		mouseY2 = y;
+		StartmouseX2 = (float)((x - 0.5 * (WINDOW_WIDTH/2)) / (0.5 * (WINDOW_WIDTH / 2)));
+		StartmouseY2 = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
+	}
+	else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE) { //왼쪽 마우스 뗐을 경우, z값 초기화.
 
+		box_vertices2[2] = 1;
+		box_vertices2[5] = 1;
+		box_vertices2[8] = 1;
+		box_vertices2[11] = 1;
+		EndmouseX2 = (float)((x - 0.5 * (WINDOW_WIDTH / 2)) / (0.5 * (WINDOW_WIDTH / 2)));
+		EndmouseY2 = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
+		calc_box_color2();
+
+	}
 }
 void myMouseDrag(int x, int y) {
 
 	if (Holding == FALSE) { //'/' 안누를 시.
-
-		if (mouseX < x) {	//pan right
-			if (mouseY < y) {
-				tiltRad -= 0.3f;
+			if (mouseX < x) {	//pan right
+				if (mouseY < y) {
+					tiltRad -= 0.3f;
+				}
+				else if (mouseY > y) {
+					tiltRad += 0.3f;
+				}
+				panRad -= 0.3f;
+				updateViewmat();
+				mouseX = x;
+				mouseY = y;
 			}
-			else if (mouseY > y) {
-				tiltRad += 0.3f;
+			else if (mouseX > x) {
+				if (mouseY < y) {	//tilt up
+					tiltRad -= 0.3f;
+				}
+				else if (mouseY > y) {				//tilt down
+					tiltRad += 0.3f;
+				}
+				panRad += 0.3f;
+				updateViewmat();
+				mouseX = x;
+				mouseY = y;
 			}
-			panRad -= 0.3f;
-			updateViewmat();
-			mouseX = x;
-			mouseY = y;
-		}
-		else if (mouseX > x) {
-			if (mouseY < y) {	//tilt up
-				tiltRad -= 0.3f;
+			else {
+				if (mouseY < y) {	//tilt up
+					tiltRad -= 0.3f;
+				}
+				else if (mouseY > y) {				//tilt down
+					tiltRad += 0.3f;
+				}
+				updateViewmat();
+				mouseX = x;
+				mouseY = y;
 			}
-			else if (mouseY > y) {				//tilt down
-				tiltRad += 0.3f;
-			}
-			panRad += 0.3f;
-			updateViewmat();
-			mouseX = x;
-			mouseY = y;
-		}
-		else {
-			if (mouseY < y) {	//tilt up
-				tiltRad -= 0.3f;
-			}
-			else if (mouseY > y) {				//tilt down
-				tiltRad += 0.3f;
-			}
-			updateViewmat();
-			mouseX = x;
-			mouseY = y;
-		}
+		
 	}
 	else {
 
-		varX = (float)((x - 0.5 * WINDOW_WIDTH) / (0.5 * WINDOW_WIDTH));
+		varX = (float)((x - 0.5 * (WINDOW_WIDTH/2)) / (0.5 * (WINDOW_WIDTH/2)));
 		varY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
 		box_vertices[0] = StartmouseX;
 		box_vertices[1] = StartmouseY;
@@ -1275,6 +1926,68 @@ void myMouseDrag(int x, int y) {
 		box_vertices[5] = -1;
 		box_vertices[8] = -1;
 		box_vertices[11] = -1;
+
+	}
+
+	glutPostRedisplay();
+}
+void myMouseDrag2(int x, int y) {
+
+	if (Holding == FALSE) { //'/' 안누를 시.
+
+		if (mouseX2 < x) {	//pan right
+			if (mouseY2 < y) {
+				tiltRad2 -= 0.3f;
+			}
+			else if (mouseY2 > y) {
+				tiltRad2 += 0.3f;
+			}
+			panRad2 -= 0.3f;
+			updateViewmat();
+			mouseX2 = x;
+			mouseY2 = y;
+		}
+		else if (mouseX2 > x) {
+			if (mouseY2 < y) {	//tilt up
+				tiltRad2 -= 0.3f;
+			}
+			else if (mouseY2 > y) {				//tilt down
+				tiltRad2 += 0.3f;
+			}
+			panRad2 += 0.3f;
+			updateViewmat();
+			mouseX2 = x;
+			mouseY2 = y;
+		}
+		else {
+			if (mouseY2 < y) {	//tilt up
+				tiltRad2 -= 0.3f;
+			}
+			else if (mouseY2 > y) {				//tilt down
+				tiltRad2 += 0.3f;
+			}
+			updateViewmat();
+			mouseX2 = x;
+			mouseY2 = y;
+		}
+
+	}
+	else {
+
+		varX2 = (float)((x - 0.5 * (WINDOW_WIDTH/2)) / (0.5 * (WINDOW_WIDTH/2)));
+		varY2 = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
+		box_vertices2[0] = StartmouseX2;
+		box_vertices2[1] = StartmouseY2;
+		box_vertices2[3] = varX2;
+		box_vertices2[4] = StartmouseY2;
+		box_vertices2[6] = varX2;
+		box_vertices2[7] = varY2;
+		box_vertices2[9] = StartmouseX2;
+		box_vertices2[10] = varY2;
+		box_vertices2[2] = -1;
+		box_vertices2[5] = -1;
+		box_vertices2[8] = -1;
+		box_vertices2[11] = -1;
 
 	}
 
@@ -1318,102 +2031,226 @@ void MyMouseWheelFunc(int wheel, int direction, int x, int y) {
 	}
 	glutPostRedisplay();
 }
-void init()
+void MyMouseWheelFunc2(int wheel, int direction, int x, int y) {
+	if (direction > 0) {		//zoom in
+		if (orthoOn2 == 0) {
+			persRad2 -= 1.0f;
+			glm::mat4 perspectiveMat = glm::perspective(persRad2 * TO_RADIAN, 1.0f, zNear2, zFar2);
+			projectmat2 = perspectiveMat;
+
+			updateViewmat();
+		}
+		else if (orthoOn == 1) {
+			maxX2 -= 0.1f;
+			minX2 += 0.1f;
+			maxY2 -= 0.1f;
+			minY2 += 0.1f;
+			orthoMat2 = glm::ortho(minX2, maxX2, minY2, maxY2, zNear2, zFar2);
+			projectmat2 = orthoMat2;
+		}
+
+	}
+	else {					//zoom out
+		if (orthoOn2 == 0) {
+			persRad2 += 1.0f;
+			glm::mat4 perspectiveMat = glm::perspective(persRad2 * TO_RADIAN, 1.0f, zNear2, zFar2);
+			projectmat2 = perspectiveMat;
+			updateViewmat();
+		}
+		else if (orthoOn2 == 1) {
+			maxX2 += 0.1f;
+			minX2 -= 0.1f;
+			maxY2 += 0.1f;
+			minY2 -= 0.1f;
+			orthoMat2 = glm::ortho(minX2, maxX2, minY2, maxY2, zNear2, zFar2);
+
+			projectmat2 = orthoMat2;
+		}
+	}
+	glutPostRedisplay();
+}
+void init(string file_name, float obj_scale)
 {
-	//initilize the glew and check the errors.
-	GLenum res = glewInit();
-	if (res != GLEW_OK)
-	{
-		fprintf(stderr, "Error: '%s' \n", glewGetErrorString(res));
+	if (subwindow_num == 1) {
+		//initilize the glew and check the errors.
+		GLenum res = glewInit();
+		if (res != GLEW_OK)
+		{
+			fprintf(stderr, "Error: '%s' \n", glewGetErrorString(res));
+		}
+
+		//select the background color
+		glClearColor(1.f, 1.f, 1.f, 1.0);
+		glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+
+		loadObj(file_name, obj_scale);
+
+		
+		calc_color();
+
+
+		programID = LoadShaders("VertexShader.txt", "FragmentShader.txt");
+		programID2 = LoadShaders("VertexShader2_box.txt", "FragmentShader2_box.txt");
+
+		glUseProgram(programID);
+
+		glGenVertexArrays(2, vao);
+
+		glGenBuffers(2, vbo);
+
+		glBindVertexArray(vao[0]);
+
+		glGenBuffers(1, &ebo);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * vertexIndices.size(), vertexIndices.data(), GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * obj_vertices.size(), obj_vertices.data(), GL_STATIC_DRAW);
+
+		GLint vtxPosition = glGetAttribLocation(programID, "vtxPosition");
+		glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+
+		glEnableVertexAttribArray(vtxPosition);
+
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor.size(), aColor.data(), GL_STATIC_DRAW);
+		GLint aColor = glGetAttribLocation(programID, "a_Color");
+		glVertexAttribPointer(aColor, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+		glEnableVertexAttribArray(aColor);
+
+		GLuint matLoc = glGetUniformLocation(programID, "worldMat");
+		glUniformMatrix4fv(matLoc, 1, GL_FALSE, &wmat[0][0]);
+
+
+		tiltmat = glm::rotate(tiltRad * TO_RADIAN, glm::vec3(1.0f, 0, 0));
+		rotmat = glm::rotate(panRad * TO_RADIAN, glm::vec3(0, 1.0f, 0));
+		transmat = glm::translate(glm::vec3(transX, transY, transZ));
+
+		viewmat = glm::transpose(tiltmat) * glm::transpose(rotmat) * glm::inverse(transmat);
+
+		GLuint viewID = glGetUniformLocation(programID, "viewmat");
+		glUniformMatrix4fv(viewID, 1, GL_FALSE, &viewmat[0][0]);
+
+
+		glm::mat4 orthoMat = glm::ortho(minX, maxX, minY, maxY, zNear, zFar);
+
+		projectmat = orthoMat;
+
+		GLuint projectID = glGetUniformLocation(programID, "projectmat");
+		glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat[0][0]);
+
+		GLuint lightPosID = glGetUniformLocation(programID, "uLightPos");
+		glUniform3fv(lightPosID, 1, &lightPos[0]);
+
+		glUniform3fv(glGetUniformLocation(programID, "material.diffuse"), 1, &material.MTL_Kd[0]);
+		glUniform3fv(glGetUniformLocation(programID, "material.specular"), 1, &material.MTL_Kd[0]);
+
+		glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
+
+		// ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡBox drawingㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+		glUseProgram(programID2);
+		glBindVertexArray(vao[1]);
+		glGenBuffers(1, &vbo_box);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_box);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, box_vertices, GL_STATIC_DRAW);
+
+		GLuint vtxPosition2 = glGetAttribLocation(programID2, "vtxPosition");
+		glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+		glEnableVertexAttribArray(vtxPosition);
+
+		//glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0);
 	}
-
-	//select the background color
-	glClearColor(1.f, 1.f, 1.f, 1.0);
-	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-
-	loadObj(filename, scale);
+	else if(subwindow_num == 2){													//subwindow 2
 	
-	calc_color();
+		//initilize the glew and check the errors.
+		GLenum res = glewInit();
+		if (res != GLEW_OK)
+		{
+			fprintf(stderr, "Error: '%s' \n", glewGetErrorString(res));
+		}
 
-	int a = 0;
-	cout << "---------------------test---------------------" << endl;
-	cout << "near vertex\tnear face\tnear face" << endl;
+		//select the background color
+		glClearColor(1.f, 1.f, 1.f, 1.0);
+		glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
-	for (int i = 0; i < vertexInfo[a].near_vertex.size(); i++) {
-		cout << vertexInfo[a].near_vertex[i] << "\t\t" << vertexInfo[a].near_face[i].x << " \t\t" << vertexInfo[a].near_face[i].y << endl;
+		loadObj(file_name, obj_scale);
+
+		
+		calc_color();
+
+
+		programID = LoadShaders("VertexShader.txt", "FragmentShader.txt");
+		programID2 = LoadShaders("VertexShader2_box.txt", "FragmentShader2_box.txt");
+
+		glUseProgram(programID);
+
+		glGenVertexArrays(2, vao);
+
+		glGenBuffers(2, vbo);
+
+		glBindVertexArray(vao[0]);
+
+		glGenBuffers(1, &ebo);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * vertexIndices2.size(), vertexIndices2.data(), GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * obj_vertices2.size(), obj_vertices2.data(), GL_STATIC_DRAW);
+
+		GLint vtxPosition = glGetAttribLocation(programID, "vtxPosition");
+		glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+
+		glEnableVertexAttribArray(vtxPosition);
+
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor2.size(), aColor2.data(), GL_STATIC_DRAW);
+		GLint aColor = glGetAttribLocation(programID, "a_Color");
+		glVertexAttribPointer(aColor, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+		glEnableVertexAttribArray(aColor);
+
+		GLuint matLoc = glGetUniformLocation(programID, "worldMat");
+		glUniformMatrix4fv(matLoc, 1, GL_FALSE, &wmat2[0][0]);
+
+
+		tiltmat2 = glm::rotate(tiltRad2 * TO_RADIAN, glm::vec3(1.0f, 0, 0));
+		rotmat2 = glm::rotate(panRad2 * TO_RADIAN, glm::vec3(0, 1.0f, 0));
+		transmat2 = glm::translate(glm::vec3(transX2, transY2, transZ2));
+
+		viewmat2 = glm::transpose(tiltmat2) * glm::transpose(rotmat2) * glm::inverse(transmat2);
+
+		GLuint viewID = glGetUniformLocation(programID, "viewmat");
+		glUniformMatrix4fv(viewID, 1, GL_FALSE, &viewmat2[0][0]);
+
+
+		glm::mat4 orthoMat = glm::ortho(minX, maxX2, minY2, maxY2, zNear2, zFar2);
+
+		projectmat2 = orthoMat;
+
+		GLuint projectID = glGetUniformLocation(programID, "projectmat");
+		glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat2[0][0]);
+
+		GLuint lightPosID = glGetUniformLocation(programID, "uLightPos");
+		glUniform3fv(lightPosID, 1, &lightPos2[0]);
+
+		glUniform3fv(glGetUniformLocation(programID, "material.diffuse"), 1, &material.MTL_Kd[0]);
+		glUniform3fv(glGetUniformLocation(programID, "material.specular"), 1, &material.MTL_Kd[0]);
+
+		glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff2);
+
+		// ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡBox drawingㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+		glUseProgram(programID2);
+		glBindVertexArray(vao[1]);
+		glGenBuffers(1, &vbo_box);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_box);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, box_vertices2, GL_STATIC_DRAW);
+
+		GLuint vtxPosition2 = glGetAttribLocation(programID2, "vtxPosition");
+		glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+		glEnableVertexAttribArray(vtxPosition);
+
+		//glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0);
 	}
-	cout << "----------------------------------------------" << endl << endl;
-
-	programID = LoadShaders("VertexShader.txt", "FragmentShader.txt");
-	programID2 = LoadShaders("VertexShader2_box.txt", "FragmentShader2_box.txt");
-
-	glUseProgram(programID);
-
-	glGenVertexArrays(2, vao);
-
-	glGenBuffers(2, vbo);
-
-	glBindVertexArray(vao[0]);
-
-	glGenBuffers(1, &ebo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * vertexIndices.size(), vertexIndices.data(), GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * obj_vertices.size(), obj_vertices.data(), GL_STATIC_DRAW);
-
-	GLint vtxPosition = glGetAttribLocation(programID, "vtxPosition");
-	glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
-
-	glEnableVertexAttribArray(vtxPosition);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor.size(), aColor.data(), GL_STATIC_DRAW);
-	GLint aColor = glGetAttribLocation(programID, "a_Color");
-	glVertexAttribPointer(aColor, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
-	glEnableVertexAttribArray(aColor);
-
-	GLuint matLoc = glGetUniformLocation(programID, "worldMat");
-	glUniformMatrix4fv(matLoc, 1, GL_FALSE, &wmat[0][0]);
-
-
-	tiltmat = glm::rotate(tiltRad * TO_RADIAN, glm::vec3(1.0f, 0, 0));
-	rotmat = glm::rotate(panRad * TO_RADIAN, glm::vec3(0, 1.0f, 0));
-	transmat = glm::translate(glm::vec3(transX, transY, transZ));
-
-	viewmat = glm::transpose(tiltmat) * glm::transpose(rotmat) * glm::inverse(transmat);
-
-	GLuint viewID = glGetUniformLocation(programID, "viewmat");
-	glUniformMatrix4fv(viewID, 1, GL_FALSE, &viewmat[0][0]);
-
-
-	glm::mat4 orthoMat = glm::ortho(minX, maxX, minY, maxY, zNear, zFar);
-
-	projectmat = orthoMat;
-
-	GLuint projectID = glGetUniformLocation(programID, "projectmat");
-	glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat[0][0]);
-
-	GLuint lightPosID = glGetUniformLocation(programID, "uLightPos");
-	glUniform3fv(lightPosID, 1, &lightPos[0]);
-
-	glUniform3fv(glGetUniformLocation(programID, "material.diffuse"), 1, &material.MTL_Kd[0]);
-	glUniform3fv(glGetUniformLocation(programID, "material.specular"), 1, &material.MTL_Kd[0]);
-
-	glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
-
-	// ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡBox drawingㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
-	glUseProgram(programID2);
-	glBindVertexArray(vao[1]);
-	glGenBuffers(1, &vbo_box);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_box);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, box_vertices, GL_STATIC_DRAW);
-
-	GLuint vtxPosition2 = glGetAttribLocation(programID2, "vtxPosition");
-	glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
-	glEnableVertexAttribArray(vtxPosition);
-
-	//glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0);
+	
 
 }
 int main(int argc, char** argv)
@@ -1430,10 +2267,10 @@ int main(int argc, char** argv)
 	glutInitWindowPosition(200, 200);
 	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	//This is used to define the name of the window.
-	glutCreateWindow("Simple OpenGL Window");
+	mainWindow = glutCreateWindow("Simple OpenGL Window");
 
 	//call initization function
-	init();
+	//init();
 
 	//1.
 	//Generate VAO
@@ -1441,10 +2278,29 @@ int main(int argc, char** argv)
 
 	glutDisplayFunc(renderScene);
 	//enter GLUT event processing cycle
+
+	subWindow1 = glutCreateSubWindow(mainWindow, 0,0,600,600);
+	subwindow_num = 1;
+	first_f_check = 0;
+	init(filename,scale);
+	glutDisplayFunc(renderScene);
 	glutKeyboardFunc(myKeyboard);
 	glutMouseFunc(myMouseClick);
 	glutMotionFunc(myMouseDrag);
 	glutMouseWheelFunc(MyMouseWheelFunc);
+	
+	
+	subWindow2 = glutCreateSubWindow(mainWindow, 600, 0, 600, 600);
+	subwindow_num = 2;
+	first_f_check = 0;
+	init(filename2,scale2);
+	glutDisplayFunc(renderScene2);
+	glutKeyboardFunc(myKeyboard2);
+	glutMouseFunc(myMouseClick2);
+	glutMotionFunc(myMouseDrag2);
+	glutMouseWheelFunc(MyMouseWheelFunc2);
+
+
 
 	end = clock();
 	cout << "Running Time  :  " << end - start << " ms" << endl;
