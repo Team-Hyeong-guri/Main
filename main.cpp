@@ -1,3 +1,4 @@
+#pragma warning(disable: 4996)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +8,7 @@
 #include <vector>
 #include <algorithm> 
 #include <time.h>
+#include <cstdio>
 #include<glm/glm.hpp>
 #include<glm/gtx/transform.hpp>
 #include<glm/gtc/matrix_transform.hpp>
@@ -28,10 +30,10 @@ GLuint VertexArrayID;
 int mainWindow, subWindow1, subWindow2;
 
 string filename = "PiggyBank.obj";
-string filename2 = "YuSample.obj";
+string filename2 = "PiggyBank.obj";
 string mtlpath; //mtl 파일명 저장..
 float scale = 0.3f;
-float scale2 = 0.003f;
+float scale2 = 0.3f;
 
 int subwindow_num = 1;
 
@@ -64,7 +66,7 @@ float EndmouseY, EndmouseY2;
 float varX, varX2; //박스 끝위치 x
 float varY, varY2; //박스 끝위치 y
 bool Holding = FALSE;
-
+clock_t start_t, end_t; // 시간 계산 전역변수
 
 struct Material
 {
@@ -133,6 +135,8 @@ GLuint vbo[2];
 GLuint vao[2];
 unsigned int ebo;
 
+
+void SelectScale(); // Scale 정해주는 함수 : 추후 구현 예정
 void parseMtllib(string line); //mtl 파일명 저장.
 void onReadMTLFile(string path);
 void parseKd(string line); // mtl파일의 Kd 저장.
@@ -495,8 +499,9 @@ void calc_color() {
 			vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);
 			vertexInfo[i].calc_curv = sqrt(1 - vertexInfo[i].calc_curv*vertexInfo[i].calc_curv)*1.5;		//chagne cos to sin
 			*/
+			
 
-			aColor.push_back(glm::vec3(vertexInfo[i].calc_curv, 0., 0.));
+			aColor.push_back(glm::vec3(1-vertexInfo[i].calc_curv, 1-vertexInfo[i].calc_curv, 1-vertexInfo[i].calc_curv));
 		}
 	}
 	else if (subwindow_num == 2) {
@@ -576,7 +581,7 @@ void calc_color() {
 			vertexInfo2[i].calc_curv = sqrt(1 - vertexInfo2[i].calc_curv*vertexInfo2[i].calc_curv)*1.5;		//chagne cos to sin
 			*/
 
-			aColor2.push_back(glm::vec3(vertexInfo2[i].calc_curv, 0., 0.));
+			aColor2.push_back(glm::vec3(1-vertexInfo[i].calc_curv, 1-vertexInfo[i].calc_curv, 1-vertexInfo[i].calc_curv));
 		}
 	}
 };
@@ -1305,6 +1310,71 @@ void loadObj(string path, float scale) {
 		}
 	}
 }
+void loadObj2(string path, float scale) {
+	const char* path_char = path.c_str();
+	FILE* fp = fopen(path_char, "r");
+	char aline[100];
+	char* pLine;
+	int first_word_index;
+
+	string line, currentMaterialName = "";
+
+	while (1) {
+		pLine = fgets(aline, 100, fp);
+		if (feof(fp)) {
+			break;
+		}
+
+		line = pLine;
+		if (!line.find_first_not_of("\n"))
+			line = line.erase(line.find_last_not_of("\n") + 1);
+
+		first_word_index = line.find(" ");
+
+		string first_word = line.substr(0, first_word_index);
+
+		if (first_word == "#") {
+			continue;
+		}
+		else if (first_word == "mtllib") {
+			parseMtllib(line);
+		}
+		else if (first_word == "o") {
+
+		}
+		else if (first_word == "g") {
+
+		}
+		else if (first_word == "v") {
+			parseVertex(line, scale);
+		}
+		else if (first_word == "vn") {
+			parseNormal(line);
+		}
+		else if (first_word == "vt") {
+			parseTexcoord(line);
+		}
+		else if (first_word == "usemtl") {
+			currentMaterialName = line.substr(first_word_index + 1);
+		}
+		else if (first_word == "f") {
+
+			if (first_f_check == 0) {
+				if (subwindow_num == 1) {
+					vertexInfo = new vertex_info[vertex_count];
+					first_f_check = 1;
+				}
+				else {
+					vertexInfo2 = new vertex_info[vertex_count2];
+					first_f_check = 1;
+				}
+			}
+			parseFace(line, currentMaterialName);
+		}
+	}
+	fclose(fp);
+
+}
 
 void updateViewmat() {
 
@@ -1361,7 +1431,7 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 	glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
 	vector<char> VertexShaderErrorMessage(max(InfoLogLength, int(1)));
 	glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &VertexShaderErrorMessage[0]);
-	fprintf(stdout, "%s\n", &VertexShaderErrorMessage[0]);
+	std::fprintf(stdout, "%s\n", &VertexShaderErrorMessage[0]);
 
 	//Read the Tessellation Control Shader code
 
@@ -1391,10 +1461,10 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 	glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
 	vector<char> FragmentShaderErrorMessage(max(InfoLogLength, int(1)));
 	glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, FragmentShaderErrorMessage.data());
-	fprintf(stdout, "%s\n", &FragmentShaderErrorMessage[0]);
+	std::fprintf(stdout, "%s\n", &FragmentShaderErrorMessage[0]);
 
 	//Link the program
-	fprintf(stdout, "Linking program\n");
+	std::fprintf(stdout, "Linking program\n");
 	GLuint ProgramID = glCreateProgram();
 
 	glAttachShader(ProgramID, VertexShaderID);
@@ -1409,7 +1479,7 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 	glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
 	vector<char> ProgramErrorMessage(max(InfoLogLength, int(1)));
 	glGetProgramInfoLog(ProgramID, InfoLogLength, NULL, ProgramErrorMessage.data());
-	fprintf(stdout, "%s\n", &ProgramErrorMessage[0]);
+	std::fprintf(stdout, "%s\n", &ProgramErrorMessage[0]);
 
 	glDeleteShader(VertexShaderID);
 	//glDeleteShader(TessControlShaderID);
@@ -2076,16 +2146,15 @@ void init(string file_name, float obj_scale)
 		GLenum res = glewInit();
 		if (res != GLEW_OK)
 		{
-			fprintf(stderr, "Error: '%s' \n", glewGetErrorString(res));
+			std::fprintf(stderr, "Error: '%s' \n", glewGetErrorString(res));
 		}
 
 		//select the background color
 		glClearColor(1.f, 1.f, 1.f, 1.0);
 		glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
-		loadObj(file_name, obj_scale);
+		loadObj2(file_name, obj_scale);
 
-		
 		calc_color();
 
 
@@ -2166,16 +2235,15 @@ void init(string file_name, float obj_scale)
 		GLenum res = glewInit();
 		if (res != GLEW_OK)
 		{
-			fprintf(stderr, "Error: '%s' \n", glewGetErrorString(res));
+			std::fprintf(stderr, "Error: '%s' \n", glewGetErrorString(res));
 		}
 
 		//select the background color
 		glClearColor(1.f, 1.f, 1.f, 1.0);
 		glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
-		loadObj(file_name, obj_scale);
+		loadObj2(file_name, obj_scale);
 
-		
 		calc_color();
 
 
@@ -2255,8 +2323,6 @@ void init(string file_name, float obj_scale)
 }
 int main(int argc, char** argv)
 {
-	clock_t start, end;
-	start = clock();
 
 	//init GLUT and create Window
 	//initialize the GLUT
@@ -2279,7 +2345,7 @@ int main(int argc, char** argv)
 	glutDisplayFunc(renderScene);
 	//enter GLUT event processing cycle
 
-	subWindow1 = glutCreateSubWindow(mainWindow, 0,0,600,600);
+	subWindow1 = glutCreateSubWindow(mainWindow, 0,0, WINDOW_WIDTH / 2, WINDOW_HEIGHT);
 	subwindow_num = 1;
 	first_f_check = 0;
 	init(filename,scale);
@@ -2290,7 +2356,7 @@ int main(int argc, char** argv)
 	glutMouseWheelFunc(MyMouseWheelFunc);
 	
 	
-	subWindow2 = glutCreateSubWindow(mainWindow, 600, 0, 600, 600);
+	subWindow2 = glutCreateSubWindow(mainWindow, WINDOW_WIDTH / 2, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT);
 	subwindow_num = 2;
 	first_f_check = 0;
 	init(filename2,scale2);
@@ -2299,12 +2365,6 @@ int main(int argc, char** argv)
 	glutMouseFunc(myMouseClick2);
 	glutMotionFunc(myMouseDrag2);
 	glutMouseWheelFunc(MyMouseWheelFunc2);
-
-
-
-	end = clock();
-	cout << "Running Time  :  " << end - start << " ms" << endl;
-	cout << "                 " << (end - start) * 0.001 << " s" << endl;
 
 
 	glutMainLoop();
