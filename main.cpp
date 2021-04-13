@@ -84,8 +84,7 @@ struct vertex_info {
 	glm::vec3 normal_vec = glm::vec3(0.,0.,0.);
 	float normal_count = 0;
 	vector<int>near_vertex;	//주변 점
-	vector<glm::vec2>near_face;
-	vector<int>near_face_2;
+	vector<int> near_face;	//테스트용 : near_face_2와 값이 같은지 확인하기 위함
 
 	double calc_curv = 0;
 	double calc_count = 0;
@@ -144,20 +143,14 @@ void parseKa(string line); // mtl파일의 ka 저장.
 void parseKs(string line); // mtl파일의 ks 저장.
 int HowDrawBox(float start_X, float start_Y, float End_X, float End_Y);
 
-void add_near_vertex(int vertex1, int vertex2, int vertex3, int face_num) {
-	if (subwindow_num == 1) {
+void add_near_vertex_face(int vertex1, int vertex2, int vertex3, int face_num) {
+	if (subwindow_num == 1) {	
 		auto vertex1_begin = vertexInfo[vertex1].near_vertex.begin();
 		auto vertex1_end = vertexInfo[vertex1].near_vertex.end();
 		vector<int>::iterator iter12 = find(vertex1_begin, vertex1_end, vertex2);
 		int vertex12 = distance(vertex1_begin, iter12);
-
 		if (vertex12 == vertexInfo[vertex1].near_vertex.size()) {	//기존에 vertex1의 near vertex에 vertex2가 없을때
 			vertexInfo[vertex1].near_vertex.push_back(vertex2);
-			vertexInfo[vertex1].near_face.push_back(glm::vec2(face_num, -1));
-		}
-		else {										//있을때
-			vertexInfo[vertex1].near_face[vertex12] =
-				glm::vec2(vertexInfo[vertex1].near_face[vertex12].x, face_num);
 		}
 
 		auto vertex1_begin2 = vertexInfo[vertex1].near_vertex.begin();
@@ -166,41 +159,22 @@ void add_near_vertex(int vertex1, int vertex2, int vertex3, int face_num) {
 		int vertex13 = distance(vertex1_begin2, iter13);
 		if (vertex13 == vertexInfo[vertex1].near_vertex.size()) {	//1 3 x
 			vertexInfo[vertex1].near_vertex.push_back(vertex3);
-			vertexInfo[vertex1].near_face.push_back(glm::vec2(face_num, -1));
 		}
-		else {										//있을때
-			vertexInfo[vertex1].near_face[vertex13] =
-				glm::vec2(vertexInfo[vertex1].near_face[vertex13].x, face_num);
-		}
-
-
 
 		auto vertex2_begin = vertexInfo[vertex2].near_vertex.begin();
 		auto vertex2_end = vertexInfo[vertex2].near_vertex.end();
 		vector<int>::iterator iter21 = find(vertex2_begin, vertex2_end, vertex1);
 		int vertex21 = distance(vertex2_begin, iter21);
-
 		if (vertex21 == vertexInfo[vertex2].near_vertex.size()) {	//기존에 vertex2의 near vertex에 vertex1가 없을때
 			vertexInfo[vertex2].near_vertex.push_back(vertex1);
-			vertexInfo[vertex2].near_face.push_back(glm::vec2(face_num, -1));
-		}
-		else {										//있을때
-			vertexInfo[vertex2].near_face[vertex21] =
-				glm::vec2(vertexInfo[vertex2].near_face[vertex21].x, face_num);
 		}
 
 		auto vertex2_begin2 = vertexInfo[vertex2].near_vertex.begin();
 		auto vertex2_end2 = vertexInfo[vertex2].near_vertex.end();
 		vector<int>::iterator iter23 = find(vertex2_begin2, vertex2_end2, vertex3);
 		int vertex23 = distance(vertex2_begin2, iter23);
-
 		if (vertex23 == vertexInfo[vertex2].near_vertex.size()) {	//2 3 x
 			vertexInfo[vertex2].near_vertex.push_back(vertex3);
-			vertexInfo[vertex2].near_face.push_back(glm::vec2(face_num, -1));
-		}
-		else {										//있을때
-			vertexInfo[vertex2].near_face[vertex23] =
-				glm::vec2(vertexInfo[vertex2].near_face[vertex23].x, face_num);
 		}
 
 
@@ -209,43 +183,48 @@ void add_near_vertex(int vertex1, int vertex2, int vertex3, int face_num) {
 		auto vertex3_end = vertexInfo[vertex3].near_vertex.end();
 		vector<int>::iterator iter31 = find(vertex3_begin, vertex3_end, vertex1);
 		int vertex31 = distance(vertex3_begin, iter31);
-
 		if (vertex31 == vertexInfo[vertex3].near_vertex.size()) {	//기존에 vertex3의 near vertex에 vertex1가 없을때
 			vertexInfo[vertex3].near_vertex.push_back(vertex1);
-			vertexInfo[vertex3].near_face.push_back(glm::vec2(face_num, -1));
-		}
-		else {										//있을때
-			vertexInfo[vertex3].near_face[vertex31] =
-				glm::vec2(vertexInfo[vertex3].near_face[vertex31].x, face_num);
 		}
 
 		auto vertex3_begin2 = vertexInfo[vertex3].near_vertex.begin();
 		auto vertex3_end2 = vertexInfo[vertex3].near_vertex.end();
 		vector<int>::iterator iter32 = find(vertex3_begin2, vertex3_end2, vertex2);
 		int vertex32 = distance(vertex3_begin2, iter32);
-
 		if (vertex32 == vertexInfo[vertex3].near_vertex.size()) {	//3 2 x
 			vertexInfo[vertex3].near_vertex.push_back(vertex2);
-			vertexInfo[vertex3].near_face.push_back(glm::vec2(face_num, -1));
 		}
-		else {										//있을때
-			vertexInfo[vertex3].near_face[vertex32] =
-				glm::vec2(vertexInfo[vertex3].near_face[vertex32].x, face_num);
+
+		//------------------near face에 넣기--------------------
+		auto vertex1_face_begin = vertexInfo[vertex1].near_face.begin();
+		auto vertex1_face_end = vertexInfo[vertex1].near_face.end();
+		vector<int>::iterator iter1 = find(vertex1_face_begin, vertex1_face_end, face_num);
+		if (iter1 == vertex1_face_end) {
+			vertexInfo[vertex1].near_face.push_back(face_num);
 		}
+
+		auto vertex2_face_begin = vertexInfo[vertex2].near_face.begin();
+		auto vertex2_face_end = vertexInfo[vertex2].near_face.end();
+		vector<int>::iterator iter2 = find(vertex2_face_begin, vertex2_face_end, face_num);
+		if (iter2 == vertex2_face_end) {
+			vertexInfo[vertex2].near_face.push_back(face_num);
+		}
+
+		auto vertex3_face_begin = vertexInfo[vertex3].near_face.begin();
+		auto vertex3_face_end = vertexInfo[vertex3].near_face.end();
+		vector<int>::iterator iter3 = find(vertex3_face_begin, vertex3_face_end, face_num);
+		if (iter3 == vertex3_face_end) {
+			vertexInfo[vertex3].near_face.push_back(face_num);
+		}
+
 	}
 	else if (subwindow_num == 2) {												//subwindow 2
 		auto vertex1_begin = vertexInfo2[vertex1].near_vertex.begin();
 		auto vertex1_end = vertexInfo2[vertex1].near_vertex.end();
 		vector<int>::iterator iter12 = find(vertex1_begin, vertex1_end, vertex2);
 		int vertex12 = distance(vertex1_begin, iter12);
-
 		if (vertex12 == vertexInfo2[vertex1].near_vertex.size()) {	//기존에 vertex1의 near vertex에 vertex2가 없을때
 			vertexInfo2[vertex1].near_vertex.push_back(vertex2);
-			vertexInfo2[vertex1].near_face.push_back(glm::vec2(face_num, -1));
-		}
-		else {										//있을때
-			vertexInfo2[vertex1].near_face[vertex12] =
-				glm::vec2(vertexInfo2[vertex1].near_face[vertex12].x, face_num);
 		}
 
 		auto vertex1_begin2 = vertexInfo2[vertex1].near_vertex.begin();
@@ -254,11 +233,6 @@ void add_near_vertex(int vertex1, int vertex2, int vertex3, int face_num) {
 		int vertex13 = distance(vertex1_begin2, iter13);
 		if (vertex13 == vertexInfo2[vertex1].near_vertex.size()) {	//1 3 x
 			vertexInfo2[vertex1].near_vertex.push_back(vertex3);
-			vertexInfo2[vertex1].near_face.push_back(glm::vec2(face_num, -1));
-		}
-		else {										//있을때
-			vertexInfo2[vertex1].near_face[vertex13] =
-				glm::vec2(vertexInfo2[vertex1].near_face[vertex13].x, face_num);
 		}
 
 
@@ -267,59 +241,57 @@ void add_near_vertex(int vertex1, int vertex2, int vertex3, int face_num) {
 		auto vertex2_end = vertexInfo2[vertex2].near_vertex.end();
 		vector<int>::iterator iter21 = find(vertex2_begin, vertex2_end, vertex1);
 		int vertex21 = distance(vertex2_begin, iter21);
-
 		if (vertex21 == vertexInfo2[vertex2].near_vertex.size()) {	//기존에 vertex2의 near vertex에 vertex1가 없을때
 			vertexInfo2[vertex2].near_vertex.push_back(vertex1);
-			vertexInfo2[vertex2].near_face.push_back(glm::vec2(face_num, -1));
-		}
-		else {										//있을때
-			vertexInfo2[vertex2].near_face[vertex21] =
-				glm::vec2(vertexInfo2[vertex2].near_face[vertex21].x, face_num);
 		}
 
 		auto vertex2_begin2 = vertexInfo2[vertex2].near_vertex.begin();
 		auto vertex2_end2 = vertexInfo2[vertex2].near_vertex.end();
 		vector<int>::iterator iter23 = find(vertex2_begin2, vertex2_end2, vertex3);
 		int vertex23 = distance(vertex2_begin2, iter23);
-
 		if (vertex23 == vertexInfo2[vertex2].near_vertex.size()) {	//2 3 x
 			vertexInfo2[vertex2].near_vertex.push_back(vertex3);
-			vertexInfo2[vertex2].near_face.push_back(glm::vec2(face_num, -1));
 		}
-		else {										//있을때
-			vertexInfo2[vertex2].near_face[vertex23] =
-				glm::vec2(vertexInfo2[vertex2].near_face[vertex23].x, face_num);
-		}
-
 
 
 		auto vertex3_begin = vertexInfo2[vertex3].near_vertex.begin();
 		auto vertex3_end = vertexInfo2[vertex3].near_vertex.end();
 		vector<int>::iterator iter31 = find(vertex3_begin, vertex3_end, vertex1);
 		int vertex31 = distance(vertex3_begin, iter31);
-
 		if (vertex31 == vertexInfo2[vertex3].near_vertex.size()) {	//기존에 vertex3의 near vertex에 vertex1가 없을때
 			vertexInfo2[vertex3].near_vertex.push_back(vertex1);
-			vertexInfo2[vertex3].near_face.push_back(glm::vec2(face_num, -1));
-		}
-		else {										//있을때
-			vertexInfo2[vertex3].near_face[vertex31] =
-				glm::vec2(vertexInfo2[vertex3].near_face[vertex31].x, face_num);
 		}
 
 		auto vertex3_begin2 = vertexInfo2[vertex3].near_vertex.begin();
 		auto vertex3_end2 = vertexInfo2[vertex3].near_vertex.end();
 		vector<int>::iterator iter32 = find(vertex3_begin2, vertex3_end2, vertex2);
 		int vertex32 = distance(vertex3_begin2, iter32);
-
 		if (vertex32 == vertexInfo2[vertex3].near_vertex.size()) {	//3 2 x
 			vertexInfo2[vertex3].near_vertex.push_back(vertex2);
-			vertexInfo2[vertex3].near_face.push_back(glm::vec2(face_num, -1));
 		}
-		else {										//있을때
-			vertexInfo2[vertex3].near_face[vertex32] =
-				glm::vec2(vertexInfo2[vertex3].near_face[vertex32].x, face_num);
+
+		//------------------near face에 넣기--------------------
+		auto vertex1_face_begin = vertexInfo2[vertex1].near_face.begin();
+		auto vertex1_face_end = vertexInfo2[vertex1].near_face.end();
+		vector<int>::iterator iter1 = find(vertex1_face_begin, vertex1_face_end, face_num);
+		if (iter1 == vertex1_face_end) {
+			vertexInfo2[vertex1].near_face.push_back(face_num);
 		}
+
+		auto vertex2_face_begin = vertexInfo2[vertex2].near_face.begin();
+		auto vertex2_face_end = vertexInfo2[vertex2].near_face.end();
+		vector<int>::iterator iter2 = find(vertex2_face_begin, vertex2_face_end, face_num);
+		if (iter2 == vertex2_face_end) {
+			vertexInfo2[vertex2].near_face.push_back(face_num);
+		}
+
+		auto vertex3_face_begin = vertexInfo2[vertex3].near_face.begin();
+		auto vertex3_face_end = vertexInfo2[vertex3].near_face.end();
+		vector<int>::iterator iter3 = find(vertex3_face_begin, vertex3_face_end, face_num);
+		if (iter3 == vertex3_face_end) {
+			vertexInfo2[vertex3].near_face.push_back(face_num);
+		}
+
 	}
 	
 
@@ -373,7 +345,7 @@ void calc_sin(int num, int vertex) {
 		double tb = XdotN_VdotN;
 		double tbta = tb / ta;
 
-		vertexInfo[num].calc_curv += tb / ta;
+		vertexInfo[num].calc_curv += tbta;
 		vertexInfo[num].calc_count++;
 	}
 	else if (subwindow_num == 2) {
@@ -391,115 +363,42 @@ void calc_sin(int num, int vertex) {
 		double tb = XdotN_VdotN;
 		double tbta = tb / ta;
 
-		vertexInfo2[num].calc_curv += tb / ta;
+		vertexInfo2[num].calc_curv += tbta;
 		vertexInfo2[num].calc_count++;
 	}
 
 
 };
-void calc_sin2(int num, int face) {
-	glm::vec3 normal = glm::normalize(vertexInfo[num].normal_vec);
-
-	int vertex_n1 = vertexIndices[(face - 1) * 3];
-	int vertex_n2 = vertexIndices[(face - 1) * 3 + 1];
-	int vertex_n3 = vertexIndices[(face - 1) * 3 + 2];
-
-	glm::vec3 vec2_1, vec3_1;
-	vec2_1 = obj_vertices[vertex_n2] - obj_vertices[vertex_n1];
-	vec3_1 = obj_vertices[vertex_n3] - obj_vertices[vertex_n1];
-
-	double vx = vec2_1.y*vec3_1.z - vec2_1.z*vec3_1.y;
-	double vy = vec2_1.z*vec3_1.x - vec2_1.x*vec3_1.z;
-	double vz = vec2_1.x*vec3_1.y - vec2_1.y*vec3_1.x;
-
-	glm::vec3 face_normal = glm::normalize(glm::vec3(vx, vy, vz));
-
-	double normal1 = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
-	double normal2 = sqrt(face_normal.x*face_normal.x + face_normal.y*face_normal.y
-		+ face_normal.z*face_normal.z);
-
-	vertexInfo[num].calc_curv += glm::dot(normal, face_normal) / (normal1*normal2);
-	vertexInfo[num].calc_count++;
-};
 void calc_color() {
-	cout << subwindow_num << endl;
 	if (subwindow_num == 1) {
 
 		for (int i = 0; i < vertex_count; i++) {
 			int near_vertex_count = vertexInfo[i].near_vertex.size();
 			vertexInfo[i].near_vertex_count = near_vertex_count;
-			for (int j = 0; j < near_vertex_count; j++) {
-				int first_face = (int)vertexInfo[i].near_face[j].x;
-				int second_face = (int)vertexInfo[i].near_face[j].y;
-				auto vertexInfo_face_begin = vertexInfo[i].near_face_2.begin();
-				auto vertexInfo_face_end = vertexInfo[i].near_face_2.end();
-				if (first_face != -1) {
-					vector<int>::iterator first_face_check = find(vertexInfo_face_begin, vertexInfo_face_end, first_face);
-					vector<int>::iterator second_face_check = find(vertexInfo_face_begin, vertexInfo_face_end, second_face);
-					int check_face_1 = distance(vertexInfo_face_begin, first_face_check);
-					int check_face_2 = distance(vertexInfo_face_begin, second_face_check);
 
-					if (check_face_1 == vertexInfo[i].near_face_2.size()) {	//1번째 face가 이미 계산되었는지 확인
-						vertexInfo[i].near_face_2.push_back(first_face);
+			int near_face_num;
+			int near_face_count = vertexInfo[i].near_face.size();
+			for (int j = 0; j < near_face_count; j++) {
+				near_face_num = vertexInfo[i].near_face[j];
+				int vertex_n1 = vertexIndices[(near_face_num - 1) * 3];
+				int vertex_n2 = vertexIndices[(near_face_num - 1) * 3 +1];
+				int vertex_n3 = vertexIndices[(near_face_num - 1) * 3 +2];
 
-						int vertex_n11 = vertexIndices[(first_face - 1) * 3];
-						int vertex_n12 = vertexIndices[(first_face - 1) * 3 + 1];
-						int vertex_n13 = vertexIndices[(first_face - 1) * 3 + 2];
-
-						calc_normal(i, vertex_n11, vertex_n12, vertex_n13); // i가 일정하지않나에 대한 의문.ㅡㅡㅡ
-
-						continue;
-					}
-					else if (check_face_2 == vertexInfo[i].near_face_2.size() && second_face != -1) {
-						vertexInfo[i].near_face_2.push_back(second_face);
-
-						int vertex_n11 = vertexIndices[(second_face - 1) * 3];
-						int vertex_n12 = vertexIndices[(second_face - 1) * 3 + 1];
-						int vertex_n13 = vertexIndices[(second_face - 1) * 3 + 2];
-
-						calc_normal(i, vertex_n11, vertex_n12, vertex_n13);
-
-						continue;
-					}
-				}
-				if (second_face != -1) {
-					vector<int>::iterator second_face_check = find(vertexInfo_face_begin, vertexInfo_face_end, second_face);
-					int check_face_2 = distance(vertexInfo_face_begin, second_face_check);
-					if (check_face_2 == vertexInfo[i].near_face_2.size()) {
-
-						vertexInfo[i].near_face_2.push_back(second_face);
-
-						int vertex_n21 = vertexIndices[(second_face - 1) * 3];
-						int vertex_n22 = vertexIndices[(second_face - 1) * 3 + 1];
-						int vertex_n23 = vertexIndices[(second_face - 1) * 3 + 2];
-
-						calc_normal(i, vertex_n21, vertex_n22, vertex_n23);
-
-						continue;
-					}
-
-				}
+				calc_normal(i, vertex_n1, vertex_n2, vertex_n3);
 			}
+
 			float normal_count = vertexInfo[i].normal_count;
 			vertexInfo[i].normal_vec = glm::normalize(glm::vec3(vertexInfo[i].normal_vec.x / normal_count,
 				vertexInfo[i].normal_vec.y / normal_count, vertexInfo[i].normal_vec.z / normal_count));
 
-			//--------------use calc sin--------------
+			//-------------- calc sin --------------
 			for (int j = 0; j < near_vertex_count; j++) {
 				int k = vertexInfo[i].near_vertex[j];
 				calc_sin(i, k);
+				
 			}
-			vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);
-			vertexInfo[i].calc_curv = vertexInfo[i].calc_curv * 2;
-
-			//--------------use calc sin2--------------
-			/*for (int j = 0; j < vertexInfo[i].near_face_2.size(); j++) {
-				calc_sin2(i, vertexInfo[i].near_face_2[j]);
-			}
-			vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);
-			vertexInfo[i].calc_curv = sqrt(1 - vertexInfo[i].calc_curv*vertexInfo[i].calc_curv)*1.5;		//chagne cos to sin
-			*/
-			
+			vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);	
+			vertexInfo[i].calc_curv *= 2.;
 
 			aColor.push_back(glm::vec3(1-vertexInfo[i].calc_curv, 1-vertexInfo[i].calc_curv, 1-vertexInfo[i].calc_curv));
 		}
@@ -509,79 +408,32 @@ void calc_color() {
 		for (int i = 0; i < vertex_count2; i++) {
 			int near_vertex_count = vertexInfo2[i].near_vertex.size();
 			vertexInfo2[i].near_vertex_count = near_vertex_count;
-			for (int j = 0; j < near_vertex_count; j++) {
-				int first_face = (int)vertexInfo2[i].near_face[j].x;
-				int second_face = (int)vertexInfo2[i].near_face[j].y;
-				auto vertexInfo2_face_begin = vertexInfo2[i].near_face_2.begin();
-				auto vertexInfo2_face_end = vertexInfo2[i].near_face_2.end();
-				if (first_face != -1) {
-					vector<int>::iterator first_face_check = find(vertexInfo2_face_begin, vertexInfo2_face_end, first_face);
-					vector<int>::iterator second_face_check = find(vertexInfo2_face_begin, vertexInfo2_face_end, second_face);
-					int check_face_1 = distance(vertexInfo2_face_begin, first_face_check);
-					int check_face_2 = distance(vertexInfo2_face_begin, second_face_check);
 
-					if (check_face_1 == vertexInfo2[i].near_face_2.size()) {	//1번째 face가 이미 계산되었는지 확인
-						vertexInfo2[i].near_face_2.push_back(first_face);
+			int near_face_num;
+			int near_face_count = vertexInfo2[i].near_face.size();
+			for (int j = 0; j < near_face_count; j++) {
+				near_face_num = vertexInfo2[i].near_face[j];
+				int vertex_n1 = vertexIndices2[(near_face_num - 1) * 3];
+				int vertex_n2 = vertexIndices2[(near_face_num - 1) * 3 + 1];
+				int vertex_n3 = vertexIndices2[(near_face_num - 1) * 3 + 2];
 
-						int vertex_n11 = vertexIndices2[(first_face - 1) * 3];
-						int vertex_n12 = vertexIndices2[(first_face - 1) * 3 + 1];
-						int vertex_n13 = vertexIndices2[(first_face - 1) * 3 + 2];
-
-						calc_normal(i, vertex_n11, vertex_n12, vertex_n13); // i가 일정하지않나에 대한 의문.ㅡㅡㅡ
-
-						continue;
-					}
-					else if (check_face_2 == vertexInfo2[i].near_face_2.size() && second_face != -1) {
-						vertexInfo2[i].near_face_2.push_back(second_face);
-
-						int vertex_n11 = vertexIndices2[(second_face - 1) * 3];
-						int vertex_n12 = vertexIndices2[(second_face - 1) * 3 + 1];
-						int vertex_n13 = vertexIndices2[(second_face - 1) * 3 + 2];
-
-						calc_normal(i, vertex_n11, vertex_n12, vertex_n13);
-
-						continue;
-					}
-				}
-				if (second_face != -1) {
-					vector<int>::iterator second_face_check = find(vertexInfo2_face_begin, vertexInfo2_face_end, second_face);
-					int check_face_2 = distance(vertexInfo2_face_begin, second_face_check);
-					if (check_face_2 == vertexInfo2[i].near_face_2.size()) {
-
-						vertexInfo2[i].near_face_2.push_back(second_face);
-
-						int vertex_n21 = vertexIndices2[(second_face - 1) * 3];
-						int vertex_n22 = vertexIndices2[(second_face - 1) * 3 + 1];
-						int vertex_n23 = vertexIndices2[(second_face - 1) * 3 + 2];
-
-						calc_normal(i, vertex_n21, vertex_n22, vertex_n23);
-
-						continue;
-					}
-
-				}
+				calc_normal(i, vertex_n1, vertex_n2, vertex_n3);
 			}
+
+
 			float normal_count = vertexInfo2[i].normal_count;
 			vertexInfo2[i].normal_vec = glm::normalize(glm::vec3(vertexInfo2[i].normal_vec.x / normal_count,
 				vertexInfo2[i].normal_vec.y / normal_count, vertexInfo2[i].normal_vec.z / normal_count));
 
-			//--------------use calc sin--------------
+			//-------------- calc sin --------------
 			for (int j = 0; j < near_vertex_count; j++) {
 				int k = vertexInfo2[i].near_vertex[j];
 				calc_sin(i, k);
 			}
 			vertexInfo2[i].calc_curv = (vertexInfo2[i].calc_curv / vertexInfo2[i].calc_count);
-			vertexInfo2[i].calc_curv = vertexInfo2[i].calc_curv * 2;
+			vertexInfo2[i].calc_curv *= 2.;
 
-			//--------------use calc sin2--------------
-			/*for (int j = 0; j < vertexInfo2[i].near_face_2.size(); j++) {
-				calc_sin2(i, vertexInfo2[i].near_face_2[j]);
-			}
-			vertexInfo2[i].calc_curv = (vertexInfo2[i].calc_curv / vertexInfo2[i].calc_count);
-			vertexInfo2[i].calc_curv = sqrt(1 - vertexInfo2[i].calc_curv*vertexInfo2[i].calc_curv)*1.5;		//chagne cos to sin
-			*/
-
-			aColor2.push_back(glm::vec3(1-vertexInfo[i].calc_curv, 1-vertexInfo[i].calc_curv, 1-vertexInfo[i].calc_curv));
+			aColor2.push_back(glm::vec3(1-vertexInfo2[i].calc_curv, 1-vertexInfo2[i].calc_curv, 1-vertexInfo2[i].calc_curv));
 		}
 	}
 };
@@ -1047,14 +899,15 @@ void parseFace(string line, string currentMaterialName) {
 				vertexIndices.push_back(stoi(sub_line[0]) - 1);
 				vertexIndices.push_back(stoi(sub_line[1]) - 1);
 				vertexIndices.push_back(stoi(sub_line[2]) - 1);
-				add_near_vertex( stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count);
+				add_near_vertex_face( stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count);
+				
 			}
 			else {
 				face_count2 += 1;
 				vertexIndices2.push_back(stoi(sub_line[0]) - 1);
 				vertexIndices2.push_back(stoi(sub_line[1]) - 1);
 				vertexIndices2.push_back(stoi(sub_line[2]) - 1);
-				add_near_vertex( stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count2);
+				add_near_vertex_face( stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count2);
 			}
 		}
 		else {
@@ -1084,14 +937,14 @@ void parseFace(string line, string currentMaterialName) {
 							vertexIndices.push_back(stoi(divide_slash[0]) - 1);
 							vertexIndices.push_back(stoi(divide_slash[1]) - 1);
 							vertexIndices.push_back(stoi(divide_slash[2]) - 1);
-							add_near_vertex( stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count);
+							add_near_vertex_face( stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count);
 						}
 						else {
 							face_count2 += 1;
 							vertexIndices2.push_back(stoi(divide_slash[0]) - 1);
 							vertexIndices2.push_back(stoi(divide_slash[1]) - 1);
 							vertexIndices2.push_back(stoi(divide_slash[2]) - 1);
-							add_near_vertex( stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count2);
+							add_near_vertex_face( stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count2);
 						}
 					}
 					break;
@@ -1139,14 +992,14 @@ void parseFace(string line, string currentMaterialName) {
 				vertexIndices.push_back(stoi(sub_line[0]) - 1);
 				vertexIndices.push_back(stoi(sub_line[1]) - 1);
 				vertexIndices.push_back(stoi(sub_line[2]) - 1);
-				add_near_vertex(stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count);
+				add_near_vertex_face(stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count);
 			}
 			else {
 				face_count2 += 1;
 				vertexIndices2.push_back(stoi(sub_line[0]) - 1);
 				vertexIndices2.push_back(stoi(sub_line[1]) - 1);
 				vertexIndices2.push_back(stoi(sub_line[2]) - 1);
-				add_near_vertex(stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count2);
+				add_near_vertex_face(stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count2);
 			}
 
 			if (subwindow_num == 1) {
@@ -1154,14 +1007,14 @@ void parseFace(string line, string currentMaterialName) {
 				vertexIndices.push_back(stoi(sub_line[0]) - 1);
 				vertexIndices.push_back(stoi(sub_line[2]) - 1);
 				vertexIndices.push_back(stoi(sub_line[3]) - 1);
-				add_near_vertex(stoi(sub_line[0]) - 1, stoi(sub_line[2]) - 1, stoi(sub_line[3]) - 1, face_count);
+				add_near_vertex_face(stoi(sub_line[0]) - 1, stoi(sub_line[2]) - 1, stoi(sub_line[3]) - 1, face_count);
 			}
 			else {
 				face_count2 += 1;
 				vertexIndices2.push_back(stoi(sub_line[0]) - 1);
 				vertexIndices2.push_back(stoi(sub_line[2]) - 1);
 				vertexIndices2.push_back(stoi(sub_line[3]) - 1);
-				add_near_vertex(stoi(sub_line[0]) - 1, stoi(sub_line[2]) - 1, stoi(sub_line[3]) - 1, face_count2);
+				add_near_vertex_face(stoi(sub_line[0]) - 1, stoi(sub_line[2]) - 1, stoi(sub_line[3]) - 1, face_count2);
 			}
 		}
 		else {
@@ -1189,14 +1042,14 @@ void parseFace(string line, string currentMaterialName) {
 						vertexIndices.push_back(stoi(divide_slash[0]) - 1);
 						vertexIndices.push_back(stoi(divide_slash[1]) - 1);
 						vertexIndices.push_back(stoi(divide_slash[2]) - 1);
-						add_near_vertex(stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count);
+						add_near_vertex_face(stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count);
 					}
 					else {
 						face_count2 += 1;
 						vertexIndices2.push_back(stoi(divide_slash[0]) - 1);
 						vertexIndices2.push_back(stoi(divide_slash[1]) - 1);
 						vertexIndices2.push_back(stoi(divide_slash[2]) - 1);
-						add_near_vertex(stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count2);
+						add_near_vertex_face(stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count2);
 					}
 
 					if (subwindow_num == 1) {
@@ -1204,14 +1057,14 @@ void parseFace(string line, string currentMaterialName) {
 						vertexIndices.push_back(stoi(divide_slash[0]) - 1);
 						vertexIndices.push_back(stoi(divide_slash[2]) - 1);
 						vertexIndices.push_back(stoi(divide_slash[3]) - 1);
-						add_near_vertex(stoi(divide_slash[0]) - 1, stoi(divide_slash[2]) - 1, stoi(divide_slash[3]) - 1, face_count);
+						add_near_vertex_face(stoi(divide_slash[0]) - 1, stoi(divide_slash[2]) - 1, stoi(divide_slash[3]) - 1, face_count);
 					}
 					else {
 						face_count2 += 1;
 						vertexIndices2.push_back(stoi(divide_slash[0]) - 1);
 						vertexIndices2.push_back(stoi(divide_slash[2]) - 1);
 						vertexIndices2.push_back(stoi(divide_slash[3]) - 1);
-						add_near_vertex( stoi(divide_slash[0]) - 1, stoi(divide_slash[2]) - 1, stoi(divide_slash[3]) - 1, face_count2);
+						add_near_vertex_face( stoi(divide_slash[0]) - 1, stoi(divide_slash[2]) - 1, stoi(divide_slash[3]) - 1, face_count2);
 					}
 					break;
 				case 1:
@@ -2142,6 +1995,7 @@ void MyMouseWheelFunc2(int wheel, int direction, int x, int y) {
 void init(string file_name, float obj_scale)
 {
 	if (subwindow_num == 1) {
+		cout <<endl<< "========== SubWindow 1 ==========" << endl;
 		//initilize the glew and check the errors.
 		GLenum res = glewInit();
 		if (res != GLEW_OK)
@@ -2154,6 +2008,7 @@ void init(string file_name, float obj_scale)
 		glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
 		loadObj2(file_name, obj_scale);
+
 
 		calc_color();
 
@@ -2230,7 +2085,8 @@ void init(string file_name, float obj_scale)
 		//glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0);
 	}
 	else if(subwindow_num == 2){													//subwindow 2
-	
+
+		cout << endl<<"========== SubWindow 2	 ==========" << endl;
 		//initilize the glew and check the errors.
 		GLenum res = glewInit();
 		if (res != GLEW_OK)
@@ -2243,6 +2099,7 @@ void init(string file_name, float obj_scale)
 		glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
 		loadObj2(file_name, obj_scale);
+		
 
 		calc_color();
 
@@ -2324,6 +2181,10 @@ void init(string file_name, float obj_scale)
 int main(int argc, char** argv)
 {
 
+	clock_t start_time, end_time;
+	start_time = clock();
+
+
 	//init GLUT and create Window
 	//initialize the GLUT
 	glutInit(&argc, argv);
@@ -2365,6 +2226,13 @@ int main(int argc, char** argv)
 	glutMouseFunc(myMouseClick2);
 	glutMotionFunc(myMouseDrag2);
 	glutMouseWheelFunc(MyMouseWheelFunc2);
+
+	end_time = clock();
+
+	double total_t = (double)(end_time - start_time);
+	cout << "Time : " << total_t << endl;
+	cout << "\t" << total_t / 1000.<<endl;
+
 
 
 	glutMainLoop();
