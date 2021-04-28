@@ -27,9 +27,13 @@ GLuint programID;
 GLuint programID2; //박스 프로그램
 GLuint VertexArrayID;
 
+clock_t start_time, end_time;
+clock_t st1, st2, st3, ed1, ed2, ed3;
+double ex1 = 0.0;
+
 int mainWindow, subWindow1, subWindow2;
 
-string filename = "PiggyBank.obj";
+string filename = "YuSample.obj";
 string filename2 = "PiggyBank.obj";
 string mtlpath; //mtl 파일명 저장..
 float scale = 0.3f;
@@ -44,6 +48,8 @@ vector<glm::vec2>obj_texcoord, obj_texcoord2;
 vector<glm::vec3>obj_normals, obj_normals2;
 vector<glm::vec3>aColor, aColor2;
 vector<glm::vec3>bColor, bColor2; // box 후 컬러.
+string sub_line[4];
+string divide_slash[4];
 float box_vertices[12] = {
 	0.0f, 0.0f, -1.0f,
 	0.0f, 0.0f, -1.0f,
@@ -744,42 +750,36 @@ void parseVertex(string line, float scale) {
 	else if (subwindow_num == 2) {
 		vertex_count2++;
 	}
-	string sub_line = line;
-	string word;
-	int blank_index;
+	short blank_index;
+	short now_index = 0; //이 전에 어디서부터 찾았는지,
 	glm::vec3 vertex;
 	int count = 0;
+	line = line.substr(2); // 앞에 v때기
+
 	while (1) {
-		blank_index = line.find(" ");
+		blank_index = line.find(" ", now_index);
 		if (blank_index != -1) {
-			word = line.substr(0, blank_index);
-			//cout << word << endl;
-			line = line.substr(blank_index + 1);
-			if (word == "v") {
-				continue;
-			}
+
 			if (count == 0) {
-				vertex.x = stof(word) * scale;
+				vertex.x = stof(line.substr(0, blank_index)) * scale;
+				now_index = blank_index + 1;
 				count++;
 			}
 			else if (count == 1) {
-				vertex.y = stof(word) * scale;
+				vertex.y = stof(line.substr(now_index, (blank_index - now_index))) * scale;
 				count++;
+				now_index = blank_index + 1;
 			}
 		}
 		else {
-			blank_index = line.find("\n");
-			word = line.substr(0, blank_index);
-			//cout << word << endl;
 			if (count == 2) {
-				vertex.z = stof(word) * scale;
+				vertex.z = stof(line.substr(now_index)) * scale;
 				if (subwindow_num == 1) {
 					obj_vertices.push_back(vertex);
 				}
 				else {
 					obj_vertices2.push_back(vertex);
 				}
-				
 			}
 			break;
 		}
@@ -863,255 +863,176 @@ void parseTexcoord(string line) {
 	}
 }
 void parseFace(string line, string currentMaterialName) {
-	string sub_line[4];
-	string word, divide_slash[4];
-	int blank_index;
-	int word_count = 0;
-	while (1) {										//divide blank
-		blank_index = line.find(" ");
-		if (blank_index != -1) {
-			sub_line[word_count] = line.substr(0, blank_index);
-			//cout << sub_line[word_count]+" ";
-			line = line.substr(blank_index + 1);
-			if (sub_line[word_count] == "f") {
-				continue;
-			}
-			else {
-				word_count++;
-			}
-		}
-		else {
-			blank_index = line.find("\n");
-			sub_line[word_count] = line.substr(0, blank_index);
-			//cout << sub_line[word_count] << endl;
-			break;
-		}
-	}
-	int slash_index;
-	if (sub_line[3].length() == 0) {			//3 face
-		//cout << "3 face" << endl;
 
-		slash_index = sub_line[0].find("/");	//check "/"
+	int blank_index;
+	int now_blank_index[4] = { 0, }; //모두 0으로 초기화
+	int start_index[4] = { 2, 0 }; // 처음 start = 2(f 제외하기 위함)
+	int start_divide_index[4] = { 2, }; //divide용 start
+
+	int word_count = 0;
+
+	//-------------------------------5.514----------------------------------
+	while (1) {										//divide blank
+		blank_index = line.find(" ", start_index[word_count]);
+		if (blank_index != -1) {
+			word_count++;
+			start_index[word_count] = blank_index + 1;
+			start_divide_index[word_count] = blank_index + 1;
+		}
+		else
+			break;
+	
+	}
+	//----------------------------------------------------------------------------
+
+
+	int slash_index;
+	if (word_count == 2) {			//3 face
+		
+		//sub_line[3].length() ==0 -> word_count ==2로 변경
+		slash_index = line.find("/");	//check "/"
 		if (slash_index == -1) {				//not exist "/"
 			//cout << "no slash" << endl;
 			if (subwindow_num == 1) {
 				face_count += 1;
-				vertexIndices.push_back(stoi(sub_line[0]) - 1);
-				vertexIndices.push_back(stoi(sub_line[1]) - 1);
-				vertexIndices.push_back(stoi(sub_line[2]) - 1);
-				add_near_vertex_face( stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count);
+				vertexIndices.push_back(stoi(line.substr(start_index[0], (start_index[1] - 1 - start_index[0]))) - 1);
+				vertexIndices.push_back(stoi(line.substr(start_index[1], (start_index[2] - 1 - start_index[1]))) - 1);
+				vertexIndices.push_back(stoi(line.substr(start_index[2])) - 1);
+				add_near_vertex_face(stoi(line.substr(start_index[0], (start_index[1] - 1 - start_index[0]))) - 1,
+					stoi(line.substr(start_index[1], (start_index[2] - 1 - start_index[1]))) - 1,
+					stoi(line.substr(start_index[2])) - 1, face_count);
 				
 			}
 			else {
 				face_count2 += 1;
-				vertexIndices2.push_back(stoi(sub_line[0]) - 1);
-				vertexIndices2.push_back(stoi(sub_line[1]) - 1);
-				vertexIndices2.push_back(stoi(sub_line[2]) - 1);
-				add_near_vertex_face( stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count2);
+				vertexIndices2.push_back(stoi(line.substr(start_index[0], (start_index[1] - 1 - start_index[0]))) - 1);
+				vertexIndices2.push_back(stoi(line.substr(start_index[1], (start_index[2] - 1 - start_index[1]))) - 1);
+				vertexIndices2.push_back(stoi(line.substr(start_index[2])) - 1);
+				add_near_vertex_face(stoi(line.substr(start_index[0], (start_index[1] - 1 - start_index[0]))) - 1,
+					stoi(line.substr(start_index[1], (start_index[2] - 1 - start_index[1]))) - 1,
+					stoi(line.substr(start_index[2])) - 1, face_count2);
 			}
 		}
 		else {
-			//cout << "slash" << endl;
-
-
-
 			int end_check = 0;
 			int j = 0;
-			while (end_check == 0) {
-				for (int i = 0; i < 3; i++) {
-					if (sub_line[i].find("/") != -1) {
-						slash_index = sub_line[i].find("/");
-						divide_slash[i] = sub_line[i].substr(0, slash_index);
-						sub_line[i] = sub_line[i].substr(slash_index + 1);
-					}
-					else {
-						divide_slash[i] = sub_line[i];
-						end_check = 1;
-					}
+			//-----------------------------------------16.175---------------------------------------------
+			for (int i = 0; i < 3; i++) {
+				slash_index = (line.substr(start_divide_index[i])).find("/");
+				if (slash_index != -1) {
+					now_blank_index[i] = slash_index;
 				}
-				switch (j) {
-				case 0:
-					if (divide_slash[0].length() != 0) {
-						if (subwindow_num == 1) {
-							face_count += 1;
-							vertexIndices.push_back(stoi(divide_slash[0]) - 1);
-							vertexIndices.push_back(stoi(divide_slash[1]) - 1);
-							vertexIndices.push_back(stoi(divide_slash[2]) - 1);
-							add_near_vertex_face( stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count);
-						}
-						else {
-							face_count2 += 1;
-							vertexIndices2.push_back(stoi(divide_slash[0]) - 1);
-							vertexIndices2.push_back(stoi(divide_slash[1]) - 1);
-							vertexIndices2.push_back(stoi(divide_slash[2]) - 1);
-							add_near_vertex_face( stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count2);
-						}
-					}
-					break;
-				case 1:
-					if (divide_slash[0].length() != 0) {
-						if (subwindow_num == 1) {
-							texIndices.push_back(stoi(divide_slash[0]) - 1);
-							texIndices.push_back(stoi(divide_slash[1]) - 1);
-							texIndices.push_back(stoi(divide_slash[2]) - 1);
-						}
-						else {
-							texIndices2.push_back(stoi(divide_slash[0]) - 1);
-							texIndices2.push_back(stoi(divide_slash[1]) - 1);
-							texIndices2.push_back(stoi(divide_slash[2]) - 1);
-						}
-					}
-					break;
-				case 2:
-					if (divide_slash[0].length() != 0) {
-						if (subwindow_num == 1) {
-							normalIndices.push_back(stoi(divide_slash[0]) - 1);
-							normalIndices.push_back(stoi(divide_slash[1]) - 1);
-							normalIndices.push_back(stoi(divide_slash[2]) - 1);
-						}
-						else {
-							normalIndices2.push_back(stoi(divide_slash[0]) - 1);
-							normalIndices2.push_back(stoi(divide_slash[1]) - 1);
-							normalIndices2.push_back(stoi(divide_slash[2]) - 1);
-						}
-					}
-					break;
+				else {
+					now_blank_index[i] = 0;
 				}
-				j++;
+			}
+			//--------------------------------------------------------------------------------------------
+
+			if (now_blank_index[0] != 0) {
+				if (subwindow_num == 1) {
+					face_count += 1;
+					vertexIndices.push_back(stoi(line.substr(start_index[0], now_blank_index[0])) - 1);
+					vertexIndices.push_back(stoi(line.substr(start_index[1], now_blank_index[1])) - 1);
+					vertexIndices.push_back(stoi(line.substr(start_index[2], now_blank_index[2])) - 1);
+					add_near_vertex_face( stoi(line.substr(start_index[0], now_blank_index[0])) - 1, stoi(line.substr(start_index[1], now_blank_index[1])) - 1, stoi(line.substr(start_index[2], now_blank_index[2])) - 1, face_count);
+				}
+				else {
+					face_count2 += 1;
+					vertexIndices2.push_back(stoi(line.substr(start_index[0], now_blank_index[0])) - 1);
+					vertexIndices2.push_back(stoi(line.substr(start_index[1], now_blank_index[1])) - 1);
+					vertexIndices2.push_back(stoi(line.substr(start_index[2], now_blank_index[2])) - 1);;
+					add_near_vertex_face(stoi(line.substr(start_index[0], now_blank_index[0])) - 1, stoi(line.substr(start_index[1], now_blank_index[1])) - 1, stoi(line.substr(start_index[2], now_blank_index[2])) - 1, face_count2);
+				}
 			}
 		}
 	}
 	else {										//4 face		(need to change 3 face)
-		//cout << "4 face" << endl;
-
-		slash_index = sub_line[0].find("/");
+	//	//cout << "4 face" << endl;
+		slash_index = line.find("/");
 		if (slash_index == -1) {				//not exist "/"
 			//cout << "no slash" << endl;
 			if (subwindow_num == 1) {
 				face_count += 1;
-				vertexIndices.push_back(stoi(sub_line[0]) - 1);
-				vertexIndices.push_back(stoi(sub_line[1]) - 1);
-				vertexIndices.push_back(stoi(sub_line[2]) - 1);
-				add_near_vertex_face(stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count);
+				vertexIndices.push_back(stoi(line.substr(start_index[0], (start_index[1] - 1 - start_index[0]))) - 1);
+				vertexIndices.push_back(stoi(line.substr(start_index[1], (start_index[2] - 1 - start_index[1]))) - 1);
+				vertexIndices.push_back(stoi(line.substr(start_index[2], (start_index[3] - 1 - start_index[2]))) - 1);
+				add_near_vertex_face(stoi(line.substr(start_index[0], (start_index[1] - 1 - start_index[0]))) - 1, stoi(line.substr(start_index[1], (start_index[2] - 1 - start_index[1]))) - 1, stoi(line.substr(start_index[2], (start_index[3] - 1 - start_index[2]))) - 1, face_count);
 			}
+
 			else {
 				face_count2 += 1;
-				vertexIndices2.push_back(stoi(sub_line[0]) - 1);
-				vertexIndices2.push_back(stoi(sub_line[1]) - 1);
-				vertexIndices2.push_back(stoi(sub_line[2]) - 1);
-				add_near_vertex_face(stoi(sub_line[0]) - 1, stoi(sub_line[1]) - 1, stoi(sub_line[2]) - 1, face_count2);
+				vertexIndices2.push_back(stoi(line.substr(start_index[0], (start_index[1] - 1 - start_index[0]))) - 1);
+				vertexIndices2.push_back(stoi(line.substr(start_index[1], (start_index[2] - 1 - start_index[1]))) - 1);
+				vertexIndices2.push_back(stoi(line.substr(start_index[2], (start_index[3] - 1 - start_index[2]))) - 1);
+				add_near_vertex_face(stoi(line.substr(start_index[0], (start_index[1] - 1 - start_index[0]))) - 1, stoi(line.substr(start_index[1], (start_index[2] - 1 - start_index[1]))) - 1, stoi(line.substr(start_index[2], (start_index[3] - 1 - start_index[2]))) - 1, face_count2);
 			}
 
 			if (subwindow_num == 1) {
 				face_count += 1;
-				vertexIndices.push_back(stoi(sub_line[0]) - 1);
-				vertexIndices.push_back(stoi(sub_line[2]) - 1);
-				vertexIndices.push_back(stoi(sub_line[3]) - 1);
-				add_near_vertex_face(stoi(sub_line[0]) - 1, stoi(sub_line[2]) - 1, stoi(sub_line[3]) - 1, face_count);
+				vertexIndices.push_back(stoi(line.substr(start_index[0], (start_index[1] - 1 - start_index[0]))) - 1);
+				vertexIndices.push_back(stoi(line.substr(start_index[2], (start_index[3] - 1 - start_index[2]))) - 1);
+				vertexIndices.push_back(stoi(line.substr(start_index[3])) - 1);
+				add_near_vertex_face(stoi(line.substr(start_index[0], (start_index[1] - 1 - start_index[0]))) - 1, stoi(line.substr(start_index[2], (start_index[3] - 1 - start_index[2]))) - 1, stoi(line.substr(start_index[3])) - 1, face_count);
 			}
 			else {
 				face_count2 += 1;
-				vertexIndices2.push_back(stoi(sub_line[0]) - 1);
-				vertexIndices2.push_back(stoi(sub_line[2]) - 1);
-				vertexIndices2.push_back(stoi(sub_line[3]) - 1);
-				add_near_vertex_face(stoi(sub_line[0]) - 1, stoi(sub_line[2]) - 1, stoi(sub_line[3]) - 1, face_count2);
+				vertexIndices2.push_back(stoi(line.substr(start_index[0], (start_index[1] - 1 - start_index[0]))) - 1);
+				vertexIndices2.push_back(stoi(line.substr(start_index[2], (start_index[3] - 1 - start_index[2]))) - 1);
+				vertexIndices2.push_back(stoi(line.substr(start_index[3])) - 1);
+				add_near_vertex_face(stoi(line.substr(start_index[0], (start_index[1] - 1 - start_index[0]))) - 1, stoi(line.substr(start_index[2], (start_index[3] - 1 - start_index[2]))) - 1, stoi(line.substr(start_index[3])) - 1, face_count2);
 			}
 		}
 		else {
 			//cout << "slash" << endl;
-
 			int j = 0;
-			int end_check = 0;
-			while (end_check == 0) {
-				for (int i = 0; i < 4; i++) {
-					if (sub_line[i].find("/") != -1) {
-						slash_index = sub_line[i].find("/");
-						divide_slash[i] = sub_line[i].substr(0, slash_index);
-						sub_line[i] = sub_line[i].substr(slash_index + 1);
-						//cout << divide_slash[i].length() << endl;
-					}
-					else {
-						divide_slash[i] = sub_line[i];
-						end_check = 1;
-					}
+			int pusha, pushb, pushc, pushd;
+			for (int i = 0; i < 4; i++) {
+				slash_index = (line.substr(start_divide_index[i])).find("/");
+				if (slash_index != -1) {
+					now_blank_index[i] = slash_index;
+
 				}
-				switch (j) {
-				case 0:
-					if (subwindow_num == 1) {
-						face_count += 1;
-						vertexIndices.push_back(stoi(divide_slash[0]) - 1);
-						vertexIndices.push_back(stoi(divide_slash[1]) - 1);
-						vertexIndices.push_back(stoi(divide_slash[2]) - 1);
-						add_near_vertex_face(stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count);
-					}
-					else {
-						face_count2 += 1;
-						vertexIndices2.push_back(stoi(divide_slash[0]) - 1);
-						vertexIndices2.push_back(stoi(divide_slash[1]) - 1);
-						vertexIndices2.push_back(stoi(divide_slash[2]) - 1);
-						add_near_vertex_face(stoi(divide_slash[0]) - 1, stoi(divide_slash[1]) - 1, stoi(divide_slash[2]) - 1, face_count2);
-					}
-
-					if (subwindow_num == 1) {
-						face_count += 1;
-						vertexIndices.push_back(stoi(divide_slash[0]) - 1);
-						vertexIndices.push_back(stoi(divide_slash[2]) - 1);
-						vertexIndices.push_back(stoi(divide_slash[3]) - 1);
-						add_near_vertex_face(stoi(divide_slash[0]) - 1, stoi(divide_slash[2]) - 1, stoi(divide_slash[3]) - 1, face_count);
-					}
-					else {
-						face_count2 += 1;
-						vertexIndices2.push_back(stoi(divide_slash[0]) - 1);
-						vertexIndices2.push_back(stoi(divide_slash[2]) - 1);
-						vertexIndices2.push_back(stoi(divide_slash[3]) - 1);
-						add_near_vertex_face( stoi(divide_slash[0]) - 1, stoi(divide_slash[2]) - 1, stoi(divide_slash[3]) - 1, face_count2);
-					}
-					break;
-				case 1:
-					if (subwindow_num == 1) {
-						texIndices.push_back(stoi(divide_slash[0]) - 1);
-						texIndices.push_back(stoi(divide_slash[1]) - 1);
-						texIndices.push_back(stoi(divide_slash[2]) - 1);
-
-						texIndices.push_back(stoi(divide_slash[0]) - 1);
-						texIndices.push_back(stoi(divide_slash[2]) - 1);
-						texIndices.push_back(stoi(divide_slash[3]) - 1);
-					}
-					else {
-						texIndices2.push_back(stoi(divide_slash[0]) - 1);
-						texIndices2.push_back(stoi(divide_slash[1]) - 1);
-						texIndices2.push_back(stoi(divide_slash[2]) - 1);
-
-						texIndices2.push_back(stoi(divide_slash[0]) - 1);
-						texIndices2.push_back(stoi(divide_slash[2]) - 1);
-						texIndices2.push_back(stoi(divide_slash[3]) - 1);
-					}
-					break;
-				case 2:
-					if (subwindow_num == 1) {
-						normalIndices.push_back(stoi(divide_slash[0]) - 1);
-						normalIndices.push_back(stoi(divide_slash[1]) - 1);
-						normalIndices.push_back(stoi(divide_slash[2]) - 1);
-
-						normalIndices.push_back(stoi(divide_slash[0]) - 1);
-						normalIndices.push_back(stoi(divide_slash[2]) - 1);
-						normalIndices.push_back(stoi(divide_slash[3]) - 1);
-					}
-					else {
-						normalIndices2.push_back(stoi(divide_slash[0]) - 1);
-						normalIndices2.push_back(stoi(divide_slash[1]) - 1);
-						normalIndices2.push_back(stoi(divide_slash[2]) - 1);
-
-						normalIndices2.push_back(stoi(divide_slash[0]) - 1);
-						normalIndices2.push_back(stoi(divide_slash[2]) - 1);
-						normalIndices2.push_back(stoi(divide_slash[3]) - 1);
-					}
-					break;
+				else {
+					now_blank_index[i] = 0;
 				}
-				j++;
+			}
+			pusha = stoi(line.substr(start_index[0], now_blank_index[0])) - 1;
+			pushb = stoi(line.substr(start_index[1], now_blank_index[1])) - 1;
+			pushc = stoi(line.substr(start_index[2], now_blank_index[2])) - 1;
+			pushd = stoi(line.substr(start_index[3], now_blank_index[3])) - 1;
+
+			if (subwindow_num == 1) {
+				face_count += 1;
+				vertexIndices.push_back(pusha);
+				vertexIndices.push_back(pushb);
+				vertexIndices.push_back(pushc);
+				add_near_vertex_face(pusha, pushb, pushc, face_count);
+			}
+			else {
+				face_count2 += 1;
+				vertexIndices2.push_back(pusha);
+				vertexIndices2.push_back(pushb);
+				vertexIndices2.push_back(pushc);
+				add_near_vertex_face(pusha, pushb, pushc, face_count2);
+			}
+
+			if (subwindow_num == 1) {
+				face_count += 1;
+				vertexIndices.push_back(pusha);
+				vertexIndices.push_back(pushc);
+				vertexIndices.push_back(pushd);
+				add_near_vertex_face(pusha, pushc, pushd, face_count);
+			}
+			else {
+				face_count2 += 1;
+				vertexIndices2.push_back(pusha);
+				vertexIndices2.push_back(pushc);
+				vertexIndices2.push_back(pushd);
+				add_near_vertex_face(pusha, pushc, pushd, face_count2);
 			}
 		}
 	}
+	
 }
 
 void loadObj(string path, float scale) {
@@ -1171,6 +1092,8 @@ void loadObj2(string path, float scale) {
 	int first_word_index;
 
 	string line, currentMaterialName = "";
+	char FirstChar;
+
 
 	while (1) {
 		pLine = fgets(aline, 100, fp);
@@ -1183,35 +1106,17 @@ void loadObj2(string path, float scale) {
 			line = line.erase(line.find_last_not_of("\n") + 1);
 
 		first_word_index = line.find(" ");
+		FirstChar = line.front();
 
-		string first_word = line.substr(0, first_word_index);
-
-		if (first_word == "#") {
-			continue;
-		}
-		else if (first_word == "mtllib") {
-			parseMtllib(line);
-		}
-		else if (first_word == "o") {
-
-		}
-		else if (first_word == "g") {
-
-		}
-		else if (first_word == "v") {
-			parseVertex(line, scale);
-		}
-		else if (first_word == "vn") {
-			parseNormal(line);
-		}
-		else if (first_word == "vt") {
-			parseTexcoord(line);
-		}
-		else if (first_word == "usemtl") {
-			currentMaterialName = line.substr(first_word_index + 1);
-		}
-		else if (first_word == "f") {
-
+		switch (FirstChar) {
+		case 'v':
+			if (first_word_index == 1) {
+				parseVertex(line, scale);
+				break;
+			}
+			else
+				break;
+		case 'f':
 			if (first_f_check == 0) {
 				if (subwindow_num == 1) {
 					vertexInfo = new vertex_info[vertex_count];
@@ -1223,9 +1128,21 @@ void loadObj2(string path, float scale) {
 				}
 			}
 			parseFace(line, currentMaterialName);
+			continue;
+		case '#':
+			continue;
+		case 'm': //mtllib
+			parseMtllib(line);
+		case 'o':
+			continue;
+		case 'g':
+			continue;
+		case 'u': //usemtl
+			currentMaterialName = line.substr(first_word_index + 1);
+			break;
 		}
 	}
-	fclose(fp);
+	std::fclose(fp);
 
 }
 
@@ -1994,6 +1911,7 @@ void MyMouseWheelFunc2(int wheel, int direction, int x, int y) {
 }
 void init(string file_name, float obj_scale)
 {
+
 	if (subwindow_num == 1) {
 		cout <<endl<< "========== SubWindow 1 ==========" << endl;
 		//initilize the glew and check the errors.
@@ -2007,9 +1925,14 @@ void init(string file_name, float obj_scale)
 		glClearColor(1.f, 1.f, 1.f, 1.0);
 		glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
+		start_time = clock();
 		loadObj2(file_name, obj_scale);
+		end_time = clock();
 
-
+		double total_t = (double)(end_time - start_time);
+		cout << "Time : " << total_t / 1000. << endl;
+		cout << "push Time : " << ex1 / 1000. << endl;
+		cout << endl; 
 		calc_color();
 
 
@@ -2181,9 +2104,6 @@ void init(string file_name, float obj_scale)
 int main(int argc, char** argv)
 {
 
-	clock_t start_time, end_time;
-	start_time = clock();
-
 
 	//init GLUT and create Window
 	//initialize the GLUT
@@ -2226,12 +2146,6 @@ int main(int argc, char** argv)
 	glutMouseFunc(myMouseClick2);
 	glutMotionFunc(myMouseDrag2);
 	glutMouseWheelFunc(MyMouseWheelFunc2);
-
-	end_time = clock();
-
-	double total_t = (double)(end_time - start_time);
-	cout << "Time : " << total_t << endl;
-	cout << "\t" << total_t / 1000.<<endl;
 
 
 
