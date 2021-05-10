@@ -16,9 +16,21 @@
 #include<GL/wglew.h>
 #include <GL/glut.h>
 #include<GL/freeglut.h>
+#include "imgui.h"
+#include "imgui_impl_glut.h"
+#include "imgui_impl_opengl2.h"
+
+#ifdef _MSC_VER
+#pragma warning (disable: 4505) // unreferenced local function has been removed
+#endif
+
+// Our state
+static bool show_demo_window = true;
+static bool show_another_window = false;
+static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 #define WINDOW_HEIGHT 600
-#define WINDOW_WIDTH 1200
+#define WINDOW_WIDTH 1600
 #define TO_RADIAN 0.01745329252f 
 
 using namespace std;
@@ -34,8 +46,9 @@ double tt2 = 0.0;
 
 int mainWindow, subWindow1, subWindow2;
 
-string filename = "PiggyBank.obj";
-string filename2 = "cube.obj";
+string filename = "piggyBank.obj";
+string filename2 = "piggyBank.obj";
+
 string change_filename = "cube.obj";    //바꿀 파일 이름
 string mtlpath; //mtl 파일명 저장..
 float scale = 0.3f;
@@ -152,7 +165,12 @@ GLuint vbo[2];
 GLuint vao[2];
 unsigned int ebo;
 
+void renderScene(void);
+void renderScenenew(void);
+void renderScene2(void);
 void SelectScale(); // Scale 정해주는 함수 : 추후 구현 예정
+void changeFile(char* file_str);
+void changeFile2(char* file_str);
 void parseMtllib(string line); //mtl 파일명 저장.
 void onReadMTLFile(string path);
 void parseKd(string line); // mtl파일의 Kd 저장.
@@ -172,7 +190,7 @@ void clear_subwindow_1() {
     vertex_count = 0;
     face_count = 0;
     subwindow_num = 1;
-}; 
+};
 void clear_subwindow_2() {
     obj_vertices2.clear();
     vertexIndices2.clear();
@@ -1293,9 +1311,54 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
     return ProgramID;
 }
 
+void my_display_code()
+{
+    if (show_demo_window)
+        ImGui::ShowDemoWindow(&show_demo_window);
+}
+void renderSceneNew()
+{
+    // Start the Dear ImGui frame
+    ImGui_ImplOpenGL2_NewFrame();
+    ImGui_ImplGLUT_NewFrame();
 
+    my_display_code();
+
+    if (clickbug == 1) {
+        cout << "hello";
+        clickbug = 0;
+    }
+    if (curvature_1 == 1) {
+        color_step = 1;
+        color_step2 = 1;
+        curvature_1 = 0;
+    }
+    if (curvature_2 == 1) {
+        color_step = 2;
+        color_step2 = 2;
+        curvature_2 = 0;
+    }
+
+    // Rendering
+    ImGui::Render();
+    ImGuiIO& io = ImGui::GetIO();
+    glViewport(0, 0, (GLsizei)io.DisplaySize.x, (GLsizei)io.DisplaySize.y);
+    glClearColor(1., 1., 1., 1.);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+
+    ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+
+    glutSwapBuffers();
+    glutPostRedisplay();
+}
 void renderScene(void)
 {
+
+    glUseProgram(programID);
     //Clear all pixels
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -1305,7 +1368,9 @@ void renderScene(void)
     //define the size of point and draw a point.
 
 
-    glUseProgram(programID);
+    if (changeclick == 1) {
+        changeFile(clickname);
+    }
 
     GLuint lightPosID = glGetUniformLocation(programID, "uLightPos");
     glUniform3fv(lightPosID, 1, &lightPos[0]);
@@ -1374,8 +1439,9 @@ void renderScene2(void) {
 
     //define the size of point and draw a point.
 
-
-    glUseProgram(programID);
+    if (changeclick == 1) {
+        changeFile2(clickname);
+    }
 
     GLuint lightPosID = glGetUniformLocation(programID, "uLightPos");
     glUniform3fv(lightPosID, 1, &lightPos2[0]);
@@ -1635,6 +1701,82 @@ void myKeyboard(unsigned char key, int x, int y) {
         break;
     }
     glutPostRedisplay();
+}
+void changeFile(char* file_str) {
+    GLint vtxPosition = glGetAttribLocation(programID, "vtxPosition");
+    GLint Color = glGetAttribLocation(programID, "a_Color");
+
+    filename = file_str;
+
+    clear_subwindow_1();
+    loadObj2(filename, scale);
+    calc_color();
+
+    glBindVertexArray(vao[0]);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * vertexIndices.size(), vertexIndices.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * obj_vertices.size(), obj_vertices.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+    glEnableVertexAttribArray(vtxPosition);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor.size(), aColor.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(Color, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+    glEnableVertexAttribArray(Color);
+
+    //clear_subwindow_2();
+    //loadObj2(filename, scale);
+    //calc_color();
+
+    //glBindVertexArray(vao[0]);
+
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * vertexIndices2.size(), vertexIndices2.data(), GL_STATIC_DRAW);
+
+    //glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * obj_vertices2.size(), obj_vertices2.data(), GL_STATIC_DRAW);
+    //glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+    //glEnableVertexAttribArray(vtxPosition);
+
+    //glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor2.size(), aColor2.data(), GL_STATIC_DRAW);
+    //glVertexAttribPointer(Color, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+    //glEnableVertexAttribArray(Color);
+
+    changeclick = 0;
+
+}
+void changeFile2(char* file_str) {
+    GLint vtxPosition = glGetAttribLocation(programID, "vtxPosition");
+    GLint Color = glGetAttribLocation(programID, "a_Color");
+
+    filename = file_str;
+
+
+    clear_subwindow_2();
+    loadObj2(filename, scale);
+    calc_color();
+
+    glBindVertexArray(vao[0]);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * vertexIndices2.size(), vertexIndices2.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * obj_vertices2.size(), obj_vertices2.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+    glEnableVertexAttribArray(vtxPosition);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor2.size(), aColor2.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(Color, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+    glEnableVertexAttribArray(Color);
+
+    changeclick = 0;
+
 }
 void myKeyboard2(unsigned char key, int x, int y) {
     GLint vtxPosition = glGetAttribLocation(programID, "vtxPosition");
@@ -2280,28 +2422,28 @@ int main(int argc, char** argv)
 {
 
 
-    //init GLUT and create Window
-    //initialize the GLUT
+    // Create GLUT window
     glutInit(&argc, argv);
-    //GLUT_DOUBLE enables double buffering (drawing to a background buffer while the other buffer is displayed)
-    glutInitDisplayMode(/* GLUT_3_2_CORE_PROFILE | */ GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
-    //These two functions are used to define the position and size of the window. 
-    glutInitWindowPosition(200, 200);
+#ifdef __FREEGLUT_EXT_H__
+    glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS | GLUT_DEPTH);
+#endif
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_MULTISAMPLE);
     glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-    //This is used to define the name of the window.
-    mainWindow = glutCreateWindow("Simple OpenGL Window");
+    mainWindow = glutCreateWindow("Medical 3D Project");
 
-    //call initization function
-    //init();
 
-    //1.
-    //Generate VAO
-    //3. 
 
-    glutDisplayFunc(renderScene);
-    //enter GLUT event processing cycle
+    glutDisplayFunc(renderSceneNew);
 
-    subWindow1 = glutCreateSubWindow(mainWindow, 0, 0, WINDOW_WIDTH / 2, WINDOW_HEIGHT);
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGLUT_Init();
+    ImGui_ImplGLUT_InstallFuncs();
+    ImGui_ImplOpenGL2_Init();
+
+    subWindow1 = glutCreateSubWindow(mainWindow, 0, 0, (WINDOW_WIDTH - 400) / 2, WINDOW_HEIGHT);
     subwindow_num = 1;
     first_f_check = 0;
     init(filename, scale);
@@ -2311,8 +2453,7 @@ int main(int argc, char** argv)
     glutMotionFunc(myMouseDrag);
     glutMouseWheelFunc(MyMouseWheelFunc);
 
-
-    subWindow2 = glutCreateSubWindow(mainWindow, WINDOW_WIDTH / 2, 0, WINDOW_WIDTH / 2, WINDOW_HEIGHT);
+    subWindow2 = glutCreateSubWindow(mainWindow, 600, 0, (WINDOW_WIDTH - 400) / 2, WINDOW_HEIGHT);
     subwindow_num = 2;
     first_f_check = 0;
     init(filename2, scale2);
@@ -2321,6 +2462,7 @@ int main(int argc, char** argv)
     glutMouseFunc(myMouseClick2);
     glutMotionFunc(myMouseDrag2);
     glutMouseWheelFunc(MyMouseWheelFunc2);
+
 
 
     glutMainLoop();
