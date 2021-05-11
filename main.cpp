@@ -16,9 +16,9 @@
 #include<GL/wglew.h>
 #include <GL/glut.h>
 #include<GL/freeglut.h>
-#include "imgui.h"
-#include "imgui_impl_glut.h"
-#include "imgui_impl_opengl2.h"
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glut.h"
+#include "imgui/imgui_impl_opengl2.h"
 
 #ifdef _MSC_VER
 #pragma warning (disable: 4505) // unreferenced local function has been removed
@@ -168,6 +168,7 @@ unsigned int ebo;
 void renderScene(void);
 void renderScenenew(void);
 void renderScene2(void);
+void renderSceneAll(void);
 void SelectScale(); // Scale 정해주는 함수 : 추후 구현 예정
 void changeFile(char* file_str);
 void changeFile2(char* file_str);
@@ -1358,6 +1359,7 @@ void renderSceneNew()
 void renderScene(void)
 {
 
+    glutSetWindow(subWindow1);
     glUseProgram(programID);
     //Clear all pixels
     glEnable(GL_DEPTH_TEST);
@@ -1428,9 +1430,10 @@ void renderScene(void)
     //Double buffer
     glutSwapBuffers();
 
-
 }
 void renderScene2(void) {
+
+    glutSetWindow(subWindow2);
     //Clear all pixels
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -1444,18 +1447,18 @@ void renderScene2(void) {
     }
 
     GLuint lightPosID = glGetUniformLocation(programID, "uLightPos");
-    glUniform3fv(lightPosID, 1, &lightPos2[0]);
+    glUniform3fv(lightPosID, 1, &lightPos[0]);
 
     GLuint matLoc = glGetUniformLocation(programID, "worldMat");
-    glUniformMatrix4fv(matLoc, 1, GL_FALSE, &wmat2[0][0]);
+    glUniformMatrix4fv(matLoc, 1, GL_FALSE, &wmat[0][0]);
 
     GLuint viewID = glGetUniformLocation(programID, "viewmat");
-    glUniformMatrix4fv(viewID, 1, GL_FALSE, &viewmat2[0][0]);
+    glUniformMatrix4fv(viewID, 1, GL_FALSE, &viewmat[0][0]);
 
     GLuint projectID = glGetUniformLocation(programID, "projectmat");
-    glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat2[0][0]);
+    glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat[0][0]);
 
-    glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff2);
+    glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
 
     glBindVertexArray(vao[0]);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -1499,6 +1502,10 @@ void renderScene2(void) {
     //Double buffer
     glutSwapBuffers();
 }
+void renderSceneAll(void) {
+    renderScene();
+    renderScene2();
+};
 void myKeyboard(unsigned char key, int x, int y) {
 
     GLint vtxPosition = glGetAttribLocation(programID, "vtxPosition");
@@ -2027,7 +2034,6 @@ void myMouseClick2(GLint Button, GLint State, int x, int y) {
     }
 }
 void myMouseDrag(int x, int y) {
-
     if (Holding == FALSE) { //'/' 안누를 시.
         if (mouseX < x) {   //pan right
             if (mouseY < y) {
@@ -2088,7 +2094,6 @@ void myMouseDrag(int x, int y) {
     glutPostRedisplay();
 }
 void myMouseDrag2(int x, int y) {
-
     if (Holding == FALSE) { //'/' 안누를 시.
 
         if (mouseX2 < x) {   //pan right
@@ -2377,30 +2382,30 @@ void init(string file_name, float obj_scale)
         glUniformMatrix4fv(matLoc, 1, GL_FALSE, &wmat2[0][0]);
 
 
-        tiltmat2 = glm::rotate(tiltRad2 * TO_RADIAN, glm::vec3(1.0f, 0, 0));
-        rotmat2 = glm::rotate(panRad2 * TO_RADIAN, glm::vec3(0, 1.0f, 0));
-        transmat2 = glm::translate(glm::vec3(transX2, transY2, transZ2));
+        tiltmat = glm::rotate(tiltRad * TO_RADIAN, glm::vec3(1.0f, 0, 0));
+        rotmat = glm::rotate(panRad * TO_RADIAN, glm::vec3(0, 1.0f, 0));
+        transmat = glm::translate(glm::vec3(transX, transY, transZ));
 
-        viewmat2 = glm::transpose(tiltmat2) * glm::transpose(rotmat2) * glm::inverse(transmat2);
+        viewmat = glm::transpose(tiltmat) * glm::transpose(rotmat) * glm::inverse(transmat);
 
         GLuint viewID = glGetUniformLocation(programID, "viewmat");
-        glUniformMatrix4fv(viewID, 1, GL_FALSE, &viewmat2[0][0]);
+        glUniformMatrix4fv(viewID, 1, GL_FALSE, &viewmat[0][0]);
 
 
-        glm::mat4 orthoMat = glm::ortho(minX, maxX2, minY2, maxY2, zNear2, zFar2);
+        glm::mat4 orthoMat = glm::ortho(minX, maxX, minY, maxY, zNear, zFar);
 
-        projectmat2 = orthoMat;
+        projectmat = orthoMat;
 
         GLuint projectID = glGetUniformLocation(programID, "projectmat");
-        glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat2[0][0]);
+        glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat[0][0]);
 
         GLuint lightPosID = glGetUniformLocation(programID, "uLightPos");
-        glUniform3fv(lightPosID, 1, &lightPos2[0]);
+        glUniform3fv(lightPosID, 1, &lightPos[0]);
 
         glUniform3fv(glGetUniformLocation(programID, "material.diffuse"), 1, &material.MTL_Kd[0]);
         glUniform3fv(glGetUniformLocation(programID, "material.specular"), 1, &material.MTL_Kd[0]);
 
-        glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff2);
+        glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
 
         // ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡBox drawingㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
         glUseProgram(programID2);
@@ -2447,7 +2452,7 @@ int main(int argc, char** argv)
     subwindow_num = 1;
     first_f_check = 0;
     init(filename, scale);
-    glutDisplayFunc(renderScene);
+    glutDisplayFunc(renderSceneAll);
     glutKeyboardFunc(myKeyboard);
     glutMouseFunc(myMouseClick);
     glutMotionFunc(myMouseDrag);
@@ -2457,11 +2462,11 @@ int main(int argc, char** argv)
     subwindow_num = 2;
     first_f_check = 0;
     init(filename2, scale2);
-    glutDisplayFunc(renderScene2);
-    glutKeyboardFunc(myKeyboard2);
+    glutDisplayFunc(renderSceneAll);
+    glutKeyboardFunc(myKeyboard);
     glutMouseFunc(myMouseClick2);
-    glutMotionFunc(myMouseDrag2);
-    glutMouseWheelFunc(MyMouseWheelFunc2);
+    glutMotionFunc(myMouseDrag);
+    glutMouseWheelFunc(MyMouseWheelFunc);
 
 
 
