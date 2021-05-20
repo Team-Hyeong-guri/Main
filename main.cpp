@@ -173,7 +173,6 @@ unsigned int ebo;
 void renderScene(void);
 void renderScenenew(void);
 void renderScene2(void);
-void renderGraph(void);
 void renderSceneAll(void);
 void SelectScale(); // Scale 정해주는 함수 : 추후 구현 예정
 void changeFile(char* file_str);
