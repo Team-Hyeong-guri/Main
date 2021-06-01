@@ -16,9 +16,12 @@
 #include<GL/wglew.h>
 #include <GL/glut.h>
 #include<GL/freeglut.h>
-#include "imgui.h"
-#include "imgui_impl_glut.h"
-#include "imgui_impl_opengl2.h"
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glut.h"
+#include "imgui/imgui_impl_opengl2.h"
+#include "pGNUPlotU.h"
+#include "StdAfx.h"
+#include <math.h>
 
 #ifdef _MSC_VER
 #pragma warning (disable: 4505) // unreferenced local function has been removed
@@ -31,6 +34,8 @@ static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 #define WINDOW_HEIGHT 600
 #define WINDOW_WIDTH 1600
+#define SUBWINDOW_WIDTH 600
+#define SUBWINDOW_HEIGHT 600
 #define TO_RADIAN 0.01745329252f 
 
 using namespace std;
@@ -46,13 +51,13 @@ double tt2 = 0.0;
 
 int mainWindow, subWindow1, subWindow2;
 
-string filename = "piggyBank.obj";
-string filename2 = "piggyBank.obj";
+string filename = "KWAK KYE HUN preOp.obj";
+string filename2 = "KWAK KYE HUN postOp.obj";
 
 string change_filename = "cube.obj";    //바꿀 파일 이름
 string mtlpath; //mtl 파일명 저장..
-float scale = 0.3f;
-float scale2 = 0.3f;
+float scale = 0.003f;
+float scale2 = 0.003f;
 
 int subwindow_num = 1;
 
@@ -71,6 +76,10 @@ string divide_slash[4];
 glm::vec3 first_vec, second_vec;	//calc_sin에서 각에 따른 weight주기 위함
 int second_nav_check = 0; //near vertex의 near vertex 탐색 여부
 int color_step = 1, color_step2 = 1;
+float threshold = 0.6;
+int curv_distrib[5] = { 0 }, curv_distrib2[5] = { 0 };
+double curv_percent[5] = { 0 }, curv_percent2[5] = { 0 };
+CpGnuplotU plot(_T("gnuplot\\bin\\wgnuplot.exe"));
 
 
 float box_vertices[12] = {
@@ -145,7 +154,6 @@ float zNear = 0.01f, zNear2 = 0.01f;
 float zFar = 10.0f, zFar2 = 10.0f;
 int orthoOn = 1, orthoOn2 = 1;
 int first = 1, first2 = 1;
-float randRad, randRad2;
 float persRad = 60, persRad2 = 60;
 int lightTurnOnOff = 1, lightTurnOnOff2 = 1;
 
@@ -168,6 +176,8 @@ unsigned int ebo;
 void renderScene(void);
 void renderScenenew(void);
 void renderScene2(void);
+void renderSceneAll(void);
+void show_graph(double percent[], double percent2[], int len);
 void SelectScale(); // Scale 정해주는 함수 : 추후 구현 예정
 void changeFile(char* file_str);
 void changeFile2(char* file_str);
@@ -307,6 +317,8 @@ void calc_normal(int num, int vertex_n1, int vertex_n2, int vertex_n3) {
 void calc_sin(int num, int vertex, int face_num) {
     if (num != vertex) {
         if (subwindow_num == 1) {
+            double tbta;
+
             glm::vec3 normal = vertexInfo[num].normal_vec;
             glm::vec3 vertexV = obj_vertices[num];   //기준 vertex
             glm::vec3 vertexX = obj_vertices[vertex]; //인접한 vertex
@@ -319,8 +331,8 @@ void calc_sin(int num, int vertex, int face_num) {
 
             double ta = sqrt(vertexX_V.x * vertexX_V.x + vertexX_V.y * vertexX_V.y + vertexX_V.z * vertexX_V.z);
             double tb = XdotN_VdotN;
-            double tbta = tb / ta;
 
+            tbta = tb / ta;
 
             //near vertex가 속한 face의 각에 따라 weight를 줌     --수정중
           /*  int vertex_n1 = vertexIndices[(face_num - 1) * 3];
@@ -344,16 +356,21 @@ void calc_sin(int num, int vertex, int face_num) {
             double cos = glm::dot(first_vec, second_vec) / (size_first_vec * size_second_vec);
             double sin = sqrt(1 - cos * cos);*/
 
-            if (second_nav_check == 0) {
-                vertexInfo[num].calc_curv += tbta;// *(sin * 1.5);  //점이 포함된 face의 각에 비례
-                vertexInfo[num].calc_count++;
+            if (ta != 0) {
+                if (second_nav_check == 0) {
+                    vertexInfo[num].calc_curv += tbta;// *(sin * 1.5);  //점이 포함된 face의 각에 비례
+                    vertexInfo[num].calc_count++;
+                }
+                else {
+                    vertexInfo[num].calc_curv2 += tbta;
+                    vertexInfo[num].calc_count2++;
+                }
             }
-            else {
-                vertexInfo[num].calc_curv2 += tbta;
-                vertexInfo[num].calc_count2++;
-            }
+            
         }
         else if (subwindow_num == 2) {
+            double tbta;
+
             glm::vec3 normal = vertexInfo2[num].normal_vec;
             glm::vec3 vertexV = obj_vertices2[num];   //기준 vertex
             glm::vec3 vertexX = obj_vertices2[vertex]; //인접한 vertex
@@ -366,15 +383,18 @@ void calc_sin(int num, int vertex, int face_num) {
 
             double ta = sqrt(vertexX_V.x * vertexX_V.x + vertexX_V.y * vertexX_V.y + vertexX_V.z * vertexX_V.z);
             double tb = XdotN_VdotN;
-            double tbta = tb / ta;
 
-            if (second_nav_check == 0) {
-                vertexInfo2[num].calc_curv += tbta;
-                vertexInfo2[num].calc_count++;
-            }
-            else {
-                vertexInfo2[num].calc_curv2 += tbta;
-                vertexInfo2[num].calc_count2++;
+            tbta = tb / ta;
+
+            if (ta != 0) {
+                if (second_nav_check == 0) {
+                    vertexInfo2[num].calc_curv += tbta;// *(sin * 1.5);  //점이 포함된 face의 각에 비례
+                    vertexInfo2[num].calc_count++;
+                }
+                else {
+                    vertexInfo2[num].calc_curv2 += tbta;
+                    vertexInfo2[num].calc_count2++;
+                }
             }
         }
     }
@@ -414,19 +434,47 @@ void calc_color() {
                     second_nav_check = 1;
                     calc_sin(i, m, face_num2);
                 }
-            }
+            }/*
             vertexInfo[i].calc_curv2 -= vertexInfo[i].calc_curv;
-            vertexInfo[i].calc_count2 -= vertexInfo[i].calc_count;
-            vertexInfo[i].calc_curv2 = vertexInfo[i].calc_curv2 / (2 * vertexInfo[i].calc_count2);
-
+            vertexInfo[i].calc_count2 -= vertexInfo[i].calc_count;   
+            */
+            if (vertexInfo[i].calc_count2 != 0) {
+                vertexInfo[i].calc_curv2 = vertexInfo[i].calc_curv2 / (2 * vertexInfo[i].calc_count2);
+            }
+            
             vertexInfo[i].calc_curv = (vertexInfo[i].calc_curv / vertexInfo[i].calc_count);
             vertexInfo[i].calc_curv *= 3.;
-
-            aColor.push_back(glm::vec3(1 - vertexInfo[i].calc_curv, 1 - vertexInfo[i].calc_curv, 1 - vertexInfo[i].calc_curv));
+            if (vertexInfo[i].calc_curv >= threshold) {
+                aColor.push_back(glm::vec3(vertexInfo[i].calc_curv, 0,0));
+            }
+            else {
+                aColor.push_back(glm::vec3(1. - vertexInfo[i].calc_curv, 1. - vertexInfo[i].calc_curv, 1. - vertexInfo[i].calc_curv));
+            }
 
             vertexInfo[i].calc_curv += vertexInfo[i].calc_curv2;
-
-            aColor_v2.push_back(glm::vec3(1 - vertexInfo[i].calc_curv, 1 - vertexInfo[i].calc_curv, 1 - vertexInfo[i].calc_curv));
+            if (vertexInfo[i].calc_curv >= threshold) {
+                aColor_v2.push_back(glm::vec3(vertexInfo[i].calc_curv, 0, 0));
+                
+            }
+            else {
+                aColor_v2.push_back(glm::vec3(1. - vertexInfo[i].calc_curv, 1. - vertexInfo[i].calc_curv, 1. - vertexInfo[i].calc_curv));
+               
+            }
+            if (vertexInfo[i].calc_curv >= 0.8) {
+                curv_distrib[4]++;
+            }
+            else if (vertexInfo[i].calc_curv >= 0.6) {
+                curv_distrib[3]++;
+            } 
+            else if (vertexInfo[i].calc_curv >= 0.4) {
+                curv_distrib[2]++;
+            }
+            else if (vertexInfo[i].calc_curv >= 0.2) {
+                curv_distrib[1]++;
+            }
+            else {
+                curv_distrib[0]++;
+            }
         }
     }
     else if (subwindow_num == 2) {
@@ -465,18 +513,48 @@ void calc_color() {
                     calc_sin(i, m, face_num2);
                 }
             }
-            vertexInfo2[i].calc_curv2 -= vertexInfo2[i].calc_curv;
-            vertexInfo2[i].calc_count2 -= vertexInfo2[i].calc_count;
-            vertexInfo2[i].calc_curv2 = vertexInfo2[i].calc_curv2 / (2 * vertexInfo2[i].calc_count2);
+            /*vertexInfo2[i].calc_curv2 -= vertexInfo2[i].calc_curv;
+            vertexInfo2[i].calc_count2 -= vertexInfo2[i].calc_count;*/
+            if (vertexInfo2[i].calc_count2 != 0) {
+                vertexInfo2[i].calc_curv2 = vertexInfo2[i].calc_curv2 / (2 * vertexInfo2[i].calc_count2);
+            }
 
             vertexInfo2[i].calc_curv = (vertexInfo2[i].calc_curv / vertexInfo2[i].calc_count);
             vertexInfo2[i].calc_curv *= 3.;
 
-            aColor2.push_back(glm::vec3(1 - vertexInfo2[i].calc_curv, 1 - vertexInfo2[i].calc_curv, 1 - vertexInfo2[i].calc_curv));
+            if (vertexInfo2[i].calc_curv >= threshold) {
+                aColor2.push_back(glm::vec3(vertexInfo2[i].calc_curv, 0, 0));
+            }
+            else {
+                aColor2.push_back(glm::vec3(1 - vertexInfo2[i].calc_curv, 1 - vertexInfo2[i].calc_curv, 1 - vertexInfo2[i].calc_curv));
+            }
 
             vertexInfo2[i].calc_curv += vertexInfo2[i].calc_curv2;
+            vertexInfo2[i].calc_curv = abs(vertexInfo2[i].calc_curv);
+            if (vertexInfo2[i].calc_curv >= threshold) {
+                aColor2_v2.push_back(glm::vec3(vertexInfo2[i].calc_curv, 0, 0));
 
-            aColor2_v2.push_back(glm::vec3(1 - vertexInfo2[i].calc_curv, 1 - vertexInfo2[i].calc_curv, 1 - vertexInfo2[i].calc_curv));
+            }
+            else {
+                aColor2_v2.push_back(glm::vec3(1 - vertexInfo2[i].calc_curv, 1 - vertexInfo2[i].calc_curv, 1 - vertexInfo2[i].calc_curv));
+                
+            }
+
+            if (vertexInfo2[i].calc_curv >= 0.8) {
+                curv_distrib2[4]++;
+            }
+            else if (vertexInfo2[i].calc_curv >= 0.6) {
+                curv_distrib2[3]++;
+            }
+            else if (vertexInfo2[i].calc_curv >= 0.4) {
+                curv_distrib2[2]++;
+            }
+            else if (vertexInfo2[i].calc_curv >= 0.2) {
+                curv_distrib2[1]++;
+            }
+            else {
+                curv_distrib2[0]++;
+            }
         }
     }
 };
@@ -1355,9 +1433,55 @@ void renderSceneNew()
     glutSwapBuffers();
     glutPostRedisplay();
 }
+void show_graph(double percent[], double percent2[], int len, CpGnuplotU*plot)
+{
+
+    double min1 = *min_element(percent, percent + len);
+    double min2 = *min_element(percent2, percent2 + len);
+    double min = min1 <= min2 ? min1 : min2;
+
+    double max1 = *max_element(percent, percent + len);
+    double max2 = *max_element(percent2, percent2 + len);
+    double max = max1 >= max2 ? max1 : max2;
+
+    double boxwidth = 0.3;
+    double height_space = boxwidth / 10;
+
+    // CwpGnuplot의 생성자에서 인자로 wgnuplot.exe의 전체 경로를 넘겨준다.
+    // Gnuplot을 설치한 경로에 따라 이 값을 바꿔야 한다.
+   
+
+    FILE* fp = _wfopen(_T("curv_percent.dat"), _T("wt"));
+    if (fp) {
+        for (int x = 0; x < len; x++) {
+            fwprintf(fp, _T("%f, %f \n"), (double)x, percent[x]);
+        }
+        fclose(fp);
+    }
+
+    FILE* fp2 = _wfopen(_T("curv_percent2.dat"), _T("wt"));
+    if (fp2) {
+        for (int x = 0; x < len; x++) {
+            fwprintf(fp2, _T("%f, %f \n"), (double)x + boxwidth, percent2[x]);
+        }
+        fclose(fp2);
+    }
+
+    (*plot).cmd(_T("set title 'Before And After'"));
+    (*plot).cmd(_T("set boxwidth 0.3"));   //boxwidth
+    (*plot).cmd(_T("set style fill solid 1.00 border lt - 1"));
+
+
+    (*plot).cmd(_T("plot 'curv_percent.dat' with boxes, 'curv_percent2.dat' with boxes"));
+    //plot.cmd (_T("plot [x=-3:3] sin(x), cos(x)"));
+
+
+
+}
 void renderScene(void)
 {
 
+    glutSetWindow(subWindow1);
     glUseProgram(programID);
     //Clear all pixels
     glEnable(GL_DEPTH_TEST);
@@ -1428,9 +1552,10 @@ void renderScene(void)
     //Double buffer
     glutSwapBuffers();
 
-
 }
 void renderScene2(void) {
+
+    glutSetWindow(subWindow2);
     //Clear all pixels
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -1444,30 +1569,30 @@ void renderScene2(void) {
     }
 
     GLuint lightPosID = glGetUniformLocation(programID, "uLightPos");
-    glUniform3fv(lightPosID, 1, &lightPos2[0]);
+    glUniform3fv(lightPosID, 1, &lightPos[0]);
 
     GLuint matLoc = glGetUniformLocation(programID, "worldMat");
-    glUniformMatrix4fv(matLoc, 1, GL_FALSE, &wmat2[0][0]);
+    glUniformMatrix4fv(matLoc, 1, GL_FALSE, &wmat[0][0]);
 
     GLuint viewID = glGetUniformLocation(programID, "viewmat");
-    glUniformMatrix4fv(viewID, 1, GL_FALSE, &viewmat2[0][0]);
+    glUniformMatrix4fv(viewID, 1, GL_FALSE, &viewmat[0][0]);
 
     GLuint projectID = glGetUniformLocation(programID, "projectmat");
-    glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat2[0][0]);
+    glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat[0][0]);
 
-    glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff2);
+    glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
 
     glBindVertexArray(vao[0]);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
-    if (color_step2 == 1) { //근처 1단계 탐색한 색
+    if (color_step == 1) { //근처 1단계 탐색한 색
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor2.size(), aColor2.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
         glVertexAttribPointer(bColor, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
         glEnableVertexAttribArray(bColor);
     }
-    else if (color_step2 == 2) { //근처 2단계 탐색한 색
+    else if (color_step == 2) { //근처 2단계 탐색한 색
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor2_v2.size(), aColor2_v2.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
@@ -1499,6 +1624,10 @@ void renderScene2(void) {
     //Double buffer
     glutSwapBuffers();
 }
+void renderSceneAll(void) {
+    renderScene();
+    renderScene2();
+};
 void myKeyboard(unsigned char key, int x, int y) {
 
     GLint vtxPosition = glGetAttribLocation(programID, "vtxPosition");
@@ -1653,52 +1782,22 @@ void myKeyboard(unsigned char key, int x, int y) {
     case 'x':
         color_step = 2;
         break;
-    case 'c':
-        clear_subwindow_1();
-        change_filename = "cube.obj";
-        filename = change_filename;
-        loadObj2(filename, scale);
+    /*case 'c':  //수정예정
+        threshold -= 0.1;
+        aColor.clear();
+        aColor2.clear();
+        aColor_v2.clear();
+        aColor2_v2.clear();
         calc_color();
-
-        glBindVertexArray(vao[0]);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * vertexIndices.size(), vertexIndices.data(), GL_STATIC_DRAW);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * obj_vertices.size(), obj_vertices.data(), GL_STATIC_DRAW);
-        glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
-        glEnableVertexAttribArray(vtxPosition);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor.size(), aColor.data(), GL_STATIC_DRAW);
-        glVertexAttribPointer(Color, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
-        glEnableVertexAttribArray(Color);
-
         break;
     case 'v':
-        clear_subwindow_1();
-        change_filename = "PiggyBank.obj";
-        filename = change_filename;
-        loadObj2(filename, scale);
+        threshold += 0.1;
+        aColor.clear();
+        aColor2.clear();
+        aColor_v2.clear();
+        aColor2_v2.clear();
         calc_color();
-
-        glBindVertexArray(vao[0]);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * vertexIndices.size(), vertexIndices.data(), GL_STATIC_DRAW);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * obj_vertices.size(), obj_vertices.data(), GL_STATIC_DRAW);
-        glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
-        glEnableVertexAttribArray(vtxPosition);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor.size(), aColor.data(), GL_STATIC_DRAW);
-        glVertexAttribPointer(Color, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
-        glEnableVertexAttribArray(Color);
-
-        break;
+        break;*/
     }
     glutPostRedisplay();
 }
@@ -2027,7 +2126,6 @@ void myMouseClick2(GLint Button, GLint State, int x, int y) {
     }
 }
 void myMouseDrag(int x, int y) {
-
     if (Holding == FALSE) { //'/' 안누를 시.
         if (mouseX < x) {   //pan right
             if (mouseY < y) {
@@ -2088,7 +2186,6 @@ void myMouseDrag(int x, int y) {
     glutPostRedisplay();
 }
 void myMouseDrag2(int x, int y) {
-
     if (Holding == FALSE) { //'/' 안누를 시.
 
         if (mouseX2 < x) {   //pan right
@@ -2159,10 +2256,10 @@ void MyMouseWheelFunc(int wheel, int direction, int x, int y) {
             updateViewmat();
         }
         else if (orthoOn == 1) {
-            maxX -= 0.1f;
-            minX += 0.1f;
-            maxY -= 0.1f;
-            minY += 0.1f;
+            maxX -= 0.02f;
+            minX += 0.02f;
+            maxY -= 0.02f;
+            minY += 0.02f;
             orthoMat = glm::ortho(minX, maxX, minY, maxY, zNear, zFar);
             projectmat = orthoMat;
         }
@@ -2176,10 +2273,10 @@ void MyMouseWheelFunc(int wheel, int direction, int x, int y) {
             updateViewmat();
         }
         else if (orthoOn == 1) {
-            maxX += 0.1f;
-            minX -= 0.1f;
-            maxY += 0.1f;
-            minY -= 0.1f;
+            maxX += 0.02f;
+            minX -= 0.02f;
+            maxY += 0.02f;
+            minY -= 0.02f;
             orthoMat = glm::ortho(minX, maxX, minY, maxY, zNear, zFar);
 
             projectmat = orthoMat;
@@ -2197,10 +2294,10 @@ void MyMouseWheelFunc2(int wheel, int direction, int x, int y) {
             updateViewmat();
         }
         else if (orthoOn == 1) {
-            maxX2 -= 0.1f;
-            minX2 += 0.1f;
-            maxY2 -= 0.1f;
-            minY2 += 0.1f;
+            maxX2 -= 0.02f;
+            minX2 += 0.02f;
+            maxY2 -= 0.02f;
+            minY2 += 0.02f;
             orthoMat2 = glm::ortho(minX2, maxX2, minY2, maxY2, zNear2, zFar2);
             projectmat2 = orthoMat2;
         }
@@ -2238,7 +2335,7 @@ void init(string file_name, float obj_scale)
         }
 
         //select the background color
-        glClearColor(1.f, 1.f, 1.f, 1.0);
+        glClearColor(0.85f, 0.85f, 0.85f, 1.0);
         glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
         start_time = clock();
@@ -2335,7 +2432,7 @@ void init(string file_name, float obj_scale)
         }
 
         //select the background color
-        glClearColor(1.f, 1.f, 1.f, 1.0);
+        glClearColor(0.85f, 0.85f, 0.85f, 1.0);
         glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
         loadObj2(file_name, obj_scale);
@@ -2377,30 +2474,30 @@ void init(string file_name, float obj_scale)
         glUniformMatrix4fv(matLoc, 1, GL_FALSE, &wmat2[0][0]);
 
 
-        tiltmat2 = glm::rotate(tiltRad2 * TO_RADIAN, glm::vec3(1.0f, 0, 0));
-        rotmat2 = glm::rotate(panRad2 * TO_RADIAN, glm::vec3(0, 1.0f, 0));
-        transmat2 = glm::translate(glm::vec3(transX2, transY2, transZ2));
+        tiltmat = glm::rotate(tiltRad * TO_RADIAN, glm::vec3(1.0f, 0, 0));
+        rotmat = glm::rotate(panRad * TO_RADIAN, glm::vec3(0, 1.0f, 0));
+        transmat = glm::translate(glm::vec3(transX, transY, transZ));
 
-        viewmat2 = glm::transpose(tiltmat2) * glm::transpose(rotmat2) * glm::inverse(transmat2);
+        viewmat = glm::transpose(tiltmat) * glm::transpose(rotmat) * glm::inverse(transmat);
 
         GLuint viewID = glGetUniformLocation(programID, "viewmat");
-        glUniformMatrix4fv(viewID, 1, GL_FALSE, &viewmat2[0][0]);
+        glUniformMatrix4fv(viewID, 1, GL_FALSE, &viewmat[0][0]);
 
 
-        glm::mat4 orthoMat = glm::ortho(minX, maxX2, minY2, maxY2, zNear2, zFar2);
+        glm::mat4 orthoMat = glm::ortho(minX, maxX, minY, maxY, zNear, zFar);
 
-        projectmat2 = orthoMat;
+        projectmat = orthoMat;
 
         GLuint projectID = glGetUniformLocation(programID, "projectmat");
-        glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat2[0][0]);
+        glUniformMatrix4fv(projectID, 1, GL_FALSE, &projectmat[0][0]);
 
         GLuint lightPosID = glGetUniformLocation(programID, "uLightPos");
-        glUniform3fv(lightPosID, 1, &lightPos2[0]);
+        glUniform3fv(lightPosID, 1, &lightPos[0]);
 
         glUniform3fv(glGetUniformLocation(programID, "material.diffuse"), 1, &material.MTL_Kd[0]);
         glUniform3fv(glGetUniformLocation(programID, "material.specular"), 1, &material.MTL_Kd[0]);
 
-        glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff2);
+        glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
 
         // ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡBox drawingㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
         glUseProgram(programID2);
@@ -2420,6 +2517,7 @@ void init(string file_name, float obj_scale)
 }
 int main(int argc, char** argv)
 {
+    int dd = 0;
 
 
     // Create GLUT window
@@ -2443,29 +2541,50 @@ int main(int argc, char** argv)
     ImGui_ImplGLUT_InstallFuncs();
     ImGui_ImplOpenGL2_Init();
 
-    subWindow1 = glutCreateSubWindow(mainWindow, 0, 0, (WINDOW_WIDTH - 400) / 2, WINDOW_HEIGHT);
+    subWindow1 = glutCreateSubWindow(mainWindow, 0, 0, SUBWINDOW_WIDTH, SUBWINDOW_HEIGHT);
     subwindow_num = 1;
     first_f_check = 0;
     init(filename, scale);
-    glutDisplayFunc(renderScene);
+    glutDisplayFunc(renderSceneAll);
     glutKeyboardFunc(myKeyboard);
     glutMouseFunc(myMouseClick);
     glutMotionFunc(myMouseDrag);
     glutMouseWheelFunc(MyMouseWheelFunc);
 
-    subWindow2 = glutCreateSubWindow(mainWindow, 600, 0, (WINDOW_WIDTH - 400) / 2, WINDOW_HEIGHT);
+    subWindow2 = glutCreateSubWindow(mainWindow, 600, 0, SUBWINDOW_WIDTH, SUBWINDOW_HEIGHT);
     subwindow_num = 2;
     first_f_check = 0;
     init(filename2, scale2);
-    glutDisplayFunc(renderScene2);
-    glutKeyboardFunc(myKeyboard2);
+    glutDisplayFunc(renderSceneAll);
+    glutKeyboardFunc(myKeyboard);
     glutMouseFunc(myMouseClick2);
-    glutMotionFunc(myMouseDrag2);
-    glutMouseWheelFunc(MyMouseWheelFunc2);
+    glutMotionFunc(myMouseDrag);
+    glutMouseWheelFunc(MyMouseWheelFunc);
 
 
+
+    for (int i = 0; i < 5; i++) {
+        curv_percent[i] = curv_distrib[i] / (float)vertex_count;
+        curv_percent2[i] = curv_distrib2[i] / (float)vertex_count2;
+    }
+    cout << "\t0.0~0.2\t\t0.2~0.4\t\t0.4~0.6\t\t0.6~0.8\t\t0.8~1.0\t\ttotal" << endl;
+    cout<<"count\t" << curv_distrib[0] << "\t\t" << curv_distrib[1] << "\t\t" << curv_distrib[2] << "\t\t" << curv_distrib[3] << "\t\t" << 
+        curv_distrib[4] << "\t\t"<<vertex_count<<endl;
+    cout <<"percent\t"<< curv_percent[0] << "\t" << curv_percent[1] << "\t" << curv_percent[2] << "\t" <<
+        curv_percent[3] << "\t" << curv_percent[4] << endl << endl;
+
+    cout << "count\t" << curv_distrib2[0] << "\t\t" << curv_distrib2[1] << "\t\t" << curv_distrib2[2] << "\t\t" << curv_distrib2[3] << "\t\t" <<
+        curv_distrib2[4] << "\t\t"<< vertex_count2 <<endl;
+    cout <<"percent\t"<< curv_percent2[0] << "\t" << curv_percent2[1] << "\t" << curv_percent2[2] << "\t" <<
+        curv_percent2[3] << "\t" << curv_percent2[4] << endl << endl;
+
+    int numOfElements = sizeof(curv_percent) / sizeof(double);
+
+    show_graph(curv_percent, curv_percent2, numOfElements,&plot);
+    
 
     glutMainLoop();
+
 
 
     glDeleteVertexArrays(2, vao);
