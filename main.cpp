@@ -19,6 +19,9 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glut.h"
 #include "imgui/imgui_impl_opengl2.h"
+#include "pGNUPlotU.h"
+#include "StdAfx.h"
+#include <math.h>
 
 #ifdef _MSC_VER
 #pragma warning (disable: 4505) // unreferenced local function has been removed
@@ -30,7 +33,7 @@ static bool show_another_window = false;
 static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 #define WINDOW_HEIGHT 600
-#define WINDOW_WIDTH 1800
+#define WINDOW_WIDTH 1600
 #define SUBWINDOW_WIDTH 600
 #define SUBWINDOW_HEIGHT 600
 #define TO_RADIAN 0.01745329252f 
@@ -48,13 +51,13 @@ double tt2 = 0.0;
 
 int mainWindow, subWindow1, subWindow2;
 
-string filename = "piggybank.obj";
-string filename2 = "piggybank.obj";
+string filename = "KWAK KYE HUN preOp.obj";
+string filename2 = "KWAK KYE HUN postOp.obj";
 
 string change_filename = "cube.obj";    //바꿀 파일 이름
 string mtlpath; //mtl 파일명 저장..
-float scale = 0.3f;
-float scale2 = 0.3f;
+float scale = 0.003f;
+float scale2 = 0.003f;
 
 int subwindow_num = 1;
 
@@ -75,7 +78,8 @@ int second_nav_check = 0; //near vertex의 near vertex 탐색 여부
 int color_step = 1, color_step2 = 1;
 float threshold = 0.6;
 int curv_distrib[5] = { 0 }, curv_distrib2[5] = { 0 };
-float curv_percent[5] = { 0 }, curv_percent2[5] = { 0 };
+double curv_percent[5] = { 0 }, curv_percent2[5] = { 0 };
+CpGnuplotU plot(_T("gnuplot\\bin\\wgnuplot.exe"));
 
 
 
@@ -174,7 +178,8 @@ void renderScene(void);
 void renderScenenew(void);
 void renderScene2(void);
 void renderSceneAll(void);
-void SelectScale(); // Scale 정해주는 함수 : 추후 구현 예정
+void show_graph(double percent[], double percent2[], int len);
+void SelectScale(); //  Scale 정해주는 함수 : 추후 구현 예정
 void changeFile(char* file_str);
 void changeFile2(char* file_str);
 void parseMtllib(string line); //mtl 파일명 저장.
@@ -1429,6 +1434,51 @@ void renderSceneNew()
     glutSwapBuffers();
     glutPostRedisplay();
 }
+void show_graph(double percent[], double percent2[], int len, CpGnuplotU*plot)
+{
+
+    double min1 = *min_element(percent, percent + len);
+    double min2 = *min_element(percent2, percent2 + len);
+    double min = min1 <= min2 ? min1 : min2;
+
+    double max1 = *max_element(percent, percent + len);
+    double max2 = *max_element(percent2, percent2 + len);
+    double max = max1 >= max2 ? max1 : max2;
+
+    double boxwidth = 0.3;
+    double height_space = boxwidth / 10;
+
+    // CwpGnuplot�� ���ڿ��� ���ڷ� wgnuplot.exe�� ��ü ��θ� �Ѱ��ش�.
+    // Gnuplot� ��ġ�� ��ο� ��� �� ��� �ٲ�� �Ѵ�.
+   
+
+    FILE* fp = _wfopen(_T("curv_percent.dat"), _T("wt"));
+    if (fp) {
+        for (int x = 0; x < len; x++) {
+            fwprintf(fp, _T("%f, %f \n"), (double)x, percent[x]);
+        }
+        fclose(fp);
+    }
+
+    FILE* fp2 = _wfopen(_T("curv_percent2.dat"), _T("wt"));
+    if (fp2) {
+        for (int x = 0; x < len; x++) {
+            fwprintf(fp2, _T("%f, %f \n"), (double)x + boxwidth, percent2[x]);
+        }
+        fclose(fp2);
+    }
+
+    (*plot).cmd(_T("set title 'Before And After'"));
+    (*plot).cmd(_T("set boxwidth 0.3"));   //boxwidth
+    (*plot).cmd(_T("set style fill solid 1.00 border lt - 1"));
+
+
+    (*plot).cmd(_T("plot 'curv_percent.dat' with boxes, 'curv_percent2.dat' with boxes"));
+    //plot.cmd (_T("plot [x=-3:3] sin(x), cos(x)"));
+
+
+
+}
 void renderScene(void)
 {
 
@@ -1537,6 +1587,7 @@ void renderScene2(void) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
     if (color_step == 1) { //근처 1단계 탐색한 색
+
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor2.size(), aColor2.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
@@ -2468,6 +2519,7 @@ void init(string file_name, float obj_scale)
 }
 int main(int argc, char** argv)
 {
+    int dd = 0;
 
 
     // Create GLUT window
@@ -2528,7 +2580,28 @@ int main(int argc, char** argv)
     cout <<"percent\t"<< curv_percent2[0] << "\t" << curv_percent2[1] << "\t" << curv_percent2[2] << "\t" <<
         curv_percent2[3] << "\t" << curv_percent2[4] << endl << endl;
 
+    for (int i = 0; i < 5; i++) {
+        curv_percent[i] = curv_distrib[i] / (float)vertex_count;
+        curv_percent2[i] = curv_distrib2[i] / (float)vertex_count2;
+    }
+    cout << "\t0.0~0.2\t\t0.2~0.4\t\t0.4~0.6\t\t0.6~0.8\t\t0.8~1.0\t\ttotal" << endl;
+    cout<<"count\t" << curv_distrib[0] << "\t\t" << curv_distrib[1] << "\t\t" << curv_distrib[2] << "\t\t" << curv_distrib[3] << "\t\t" << 
+        curv_distrib[4] << "\t\t"<<vertex_count<<endl;
+    cout <<"percent\t"<< curv_percent[0] << "\t" << curv_percent[1] << "\t" << curv_percent[2] << "\t" <<
+        curv_percent[3] << "\t" << curv_percent[4] << endl << endl;
+
+    cout << "count\t" << curv_distrib2[0] << "\t\t" << curv_distrib2[1] << "\t\t" << curv_distrib2[2] << "\t\t" << curv_distrib2[3] << "\t\t" <<
+        curv_distrib2[4] << "\t\t"<< vertex_count2 <<endl;
+    cout <<"percent\t"<< curv_percent2[0] << "\t" << curv_percent2[1] << "\t" << curv_percent2[2] << "\t" <<
+        curv_percent2[3] << "\t" << curv_percent2[4] << endl << endl;
+
+    int numOfElements = sizeof(curv_percent) / sizeof(double);
+
+    show_graph(curv_percent, curv_percent2, numOfElements,&plot);
+    
+
     glutMainLoop();
+
 
 
     glDeleteVertexArrays(2, vao);
