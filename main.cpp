@@ -41,7 +41,7 @@ static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 using namespace std;
 
 GLuint programID;
-GLuint programID2; //박스 프로그램
+GLuint programID2; //�ڽ� ��α׷�
 GLuint VertexArrayID;
 
 clock_t start_time, end_time;
@@ -67,20 +67,19 @@ vector<glm::vec3>obj_vertices, obj_vertices2;
 vector<glm::vec2>obj_texcoord, obj_texcoord2;
 vector<glm::vec3>obj_normals, obj_normals2;
 vector<glm::vec3>aColor, aColor_v2, aColor2, aColor2_v2;
-vector<glm::vec3>bColor, bColor2; // box 후 컬러.
+vector<glm::vec3>bColor, bColor2; // box �� �÷�.
 string sub_line[4];
 string divide_slash[4];
 
 
-//고광연 추가
-glm::vec3 first_vec, second_vec;	//calc_sin에서 각에 따른 weight주기 위함
-int second_nav_check = 0; //near vertex의 near vertex 탐색 여부
+//���� �߰�
+glm::vec3 first_vec, second_vec;	//calc_sin���� ���� �� weight�ֱ� ���
+int second_nav_check = 0; //near vertex�� near vertex Ž�� ����
 int color_step = 1, color_step2 = 1;
 float threshold = 0.6;
 int curv_distrib[5] = { 0 }, curv_distrib2[5] = { 0 };
 double curv_percent[5] = { 0 }, curv_percent2[5] = { 0 };
 CpGnuplotU plot(_T("gnuplot\\bin\\wgnuplot.exe"));
-
 
 
 float box_vertices[12] = {
@@ -95,17 +94,17 @@ float box_vertices2[12] = {
    0.0f, 0.0f, -1.0f,
    0.0f, 0.0f, -1.0f
 };
-GLuint vbo_box; //박스 위치 버퍼
-int mouseX, mouseX2;   // 마우스로 시점 이동시 전의 마우스좌표 저장  / 초기 설정 -1
+GLuint vbo_box; //�ڽ� �ġ ����
+int mouseX, mouseX2;   // ���콺�� ��� �̵��� ���� ���콺��ǥ ����  / �ʱ� ��� -1
 int mouseY, mouseY2;
-float StartmouseX, StartmouseX2; // 박스 시작 위치 x
-float StartmouseY, StartmouseY2; // 박스 시작 위치 y
+float StartmouseX, StartmouseX2; // �ڽ� ���� �ġ x
+float StartmouseY, StartmouseY2; // �ڽ� ���� �ġ y
 float EndmouseX, EndmouseX2; //q
 float EndmouseY, EndmouseY2;
-float varX, varX2; //박스 끝위치 x
-float varY, varY2; //박스 끝위치 y
+float varX, varX2; //�ڽ� ���ġ x
+float varY, varY2; //�ڽ� ���ġ y
 bool Holding = FALSE;
-clock_t start_t, end_t; // 시간 계산 전역변수
+clock_t start_t, end_t; // �ð� ��� ���
 
 struct Material
 {
@@ -115,15 +114,15 @@ struct Material
     float Ni;
     int illum;
 };
-Material material; //생성
+Material material; //��
 
 
 struct vertex_info {
     double near_vertex_count = 0;
     glm::vec3 normal_vec = glm::vec3(0., 0., 0.);
     float normal_count = 0;
-    vector<int>near_vertex;   //주변 점
-    vector<int> near_face;   //테스트용 : near_face_2와 값이 같은지 확인하기 위함
+    vector<int>near_vertex;   //�ֺ� �
+    vector<int> near_face;   //�׽�Ʈ�� : near_face_2�� ���� ����� Ȯ���ϱ� ���
 
     double calc_curv = 0;
     double calc_count = 0;
@@ -134,7 +133,7 @@ struct vertex_info {
 vertex_info* vertexInfo;
 vertex_info* vertexInfo2;
 
-int first_f_check = 0; //처음 f를 읽었는지 체크
+int first_f_check = 0; //ó� f�� �о���� üũ
 
 int vertex_count = 0;
 int vertex_count2 = 0;
@@ -158,8 +157,8 @@ int first = 1, first2 = 1;
 float persRad = 60, persRad2 = 60;
 int lightTurnOnOff = 1, lightTurnOnOff2 = 1;
 
-glm::mat4 realMat = glm::mat4(1.0f), realMat2 = glm::mat4(1.0f); // 박스좌표 계산을 위한 매트릭스
-glm::vec4 vPos, vPos2; // 박스좌표 계산을 위한 좌표
+glm::mat4 realMat = glm::mat4(1.0f), realMat2 = glm::mat4(1.0f); // �ڽ���ǥ ���� ��� ��Ʈ����
+glm::vec4 vPos, vPos2; // �ڽ���ǥ ���� ��� ��ǥ
 glm::mat4 wmat = glm::mat4(1.0f), wmat2 = glm::mat4(1.0f);
 glm::mat4 viewmat = glm::mat4(1.0f), viewmat2 = glm::mat4(1.0f);
 glm::mat4 tiltmat = glm::mat4(1.0f), tiltmat2 = glm::mat4(1.0f);
@@ -182,11 +181,11 @@ void show_graph(double percent[], double percent2[], int len);
 void SelectScale(); //  Scale 정해주는 함수 : 추후 구현 예정
 void changeFile(char* file_str);
 void changeFile2(char* file_str);
-void parseMtllib(string line); //mtl 파일명 저장.
+void parseMtllib(string line); //mtl ���ϸ� ����.
 void onReadMTLFile(string path);
-void parseKd(string line); // mtl파일의 Kd 저장.
-void parseKa(string line); // mtl파일의 ka 저장.
-void parseKs(string line); // mtl파일의 ks 저장.
+void parseKd(string line); // mtl������ Kd ����.
+void parseKa(string line); // mtl������ ka ����.
+void parseKs(string line); // mtl������ ks ����.
 int HowDrawBox(float start_X, float start_Y, float End_X, float End_Y);
 void clear_subwindow_1() {
     obj_vertices.clear();
@@ -231,7 +230,7 @@ void add_near_vertex_face(int vertex1, int vertex2, int vertex3, int face_num) {
 
         vertexInfo[vertex3].near_vertex.push_back(vertex2);
 
-        //------------------near face에 넣기--------------------
+        //------------------near face�� �ֱ�--------------------
         vertexInfo[vertex1].near_face.push_back(face_num);
 
         vertexInfo[vertex2].near_face.push_back(face_num);
@@ -254,7 +253,7 @@ void add_near_vertex_face(int vertex1, int vertex2, int vertex3, int face_num) {
         vertexInfo2[vertex3].near_vertex.push_back(vertex2);
 
 
-        //------------------near face에 넣기--------------------
+        //------------------near face�� �ֱ�--------------------
         vertexInfo2[vertex1].near_face.push_back(face_num);
 
         vertexInfo2[vertex2].near_face.push_back(face_num);
@@ -274,7 +273,7 @@ void calc_normal(int num, int vertex_n1, int vertex_n2, int vertex_n3) {
         double vz = vec2_1.x * vec3_1.y - vec2_1.y * vec3_1.x;
         glm::vec3 normal = glm::normalize(glm::vec3(vx, vy, vz));
 
-        //face각에 따라 sin값으로 weight를 줌
+        //face���� ��� sin����� weight�� ��
         double size_vec2_1 = sqrt(vec2_1.x * vec2_1.x + vec2_1.y * vec2_1.y + vec2_1.z * vec2_1.z);
         double size_vec3_1 = sqrt(vec3_1.x * vec3_1.x + vec3_1.y * vec3_1.y + vec3_1.z * vec3_1.z);
         double cos = glm::dot(vec2_1, vec3_1) / (size_vec2_1 * size_vec3_1);
@@ -284,9 +283,9 @@ void calc_normal(int num, int vertex_n1, int vertex_n2, int vertex_n3) {
             sin = -sin;
         }
 
-        vertexInfo[num].normal_vec += glm::vec3(normal.x * sin, normal.y * sin, normal.z * sin);     //각에 따른 weight 적용
+        vertexInfo[num].normal_vec += glm::vec3(normal.x * sin, normal.y * sin, normal.z * sin);     //���� �� weight ���
 
-        //vertexInfo[num].normal_vec += normal;      //기존
+        //vertexInfo[num].normal_vec += normal;      //���
         vertexInfo[num].normal_count++;
     }
     else if (subwindow_num == 2) {
@@ -309,9 +308,9 @@ void calc_normal(int num, int vertex_n1, int vertex_n2, int vertex_n3) {
             sin = -sin;
         }
 
-        vertexInfo2[num].normal_vec += glm::vec3(normal.x * sin, normal.y * sin, normal.z * sin);   //각에 따른 weight 적용
+        vertexInfo2[num].normal_vec += glm::vec3(normal.x * sin, normal.y * sin, normal.z * sin);   //���� �� weight ���
 
-        //vertexInfo2[num].normal_vec += normal;    //기존
+        //vertexInfo2[num].normal_vec += normal;    //���
         vertexInfo2[num].normal_count++;
     }
 };
@@ -321,8 +320,8 @@ void calc_sin(int num, int vertex, int face_num) {
             double tbta;
 
             glm::vec3 normal = vertexInfo[num].normal_vec;
-            glm::vec3 vertexV = obj_vertices[num];   //기준 vertex
-            glm::vec3 vertexX = obj_vertices[vertex]; //인접한 vertex
+            glm::vec3 vertexV = obj_vertices[num];   //���� vertex
+            glm::vec3 vertexX = obj_vertices[vertex]; //����� vertex
 
             glm::vec3 vertexX_V = vertexX - vertexV;
             double XdotN = vertexX.x * normal.x + vertexX.y * normal.y + vertexX.z * normal.z;
@@ -335,7 +334,7 @@ void calc_sin(int num, int vertex, int face_num) {
 
             tbta = tb / ta;
 
-            //near vertex가 속한 face의 각에 따라 weight를 줌     --수정중
+            //near vertex�� ���� face�� ���� ��� weight�� ��     --�����
           /*  int vertex_n1 = vertexIndices[(face_num - 1) * 3];
             int vertex_n2 = vertexIndices[(face_num - 1) * 3 + 1];
             int vertex_n3 = vertexIndices[(face_num - 1) * 3 + 2];
@@ -359,7 +358,7 @@ void calc_sin(int num, int vertex, int face_num) {
 
             if (ta != 0) {
                 if (second_nav_check == 0) {
-                    vertexInfo[num].calc_curv += tbta;// *(sin * 1.5);  //점이 포함된 face의 각에 비례
+                    vertexInfo[num].calc_curv += tbta;// *(sin * 1.5);  //��� ���Ե� face�� ���� ���
                     vertexInfo[num].calc_count++;
                 }
                 else {
@@ -373,8 +372,8 @@ void calc_sin(int num, int vertex, int face_num) {
             double tbta;
 
             glm::vec3 normal = vertexInfo2[num].normal_vec;
-            glm::vec3 vertexV = obj_vertices2[num];   //기준 vertex
-            glm::vec3 vertexX = obj_vertices2[vertex]; //인접한 vertex
+            glm::vec3 vertexV = obj_vertices2[num];   //���� vertex
+            glm::vec3 vertexX = obj_vertices2[vertex]; //����� vertex
 
             glm::vec3 vertexX_V = vertexX - vertexV;
             double XdotN = vertexX.x * normal.x + vertexX.y * normal.y + vertexX.z * normal.z;
@@ -389,7 +388,7 @@ void calc_sin(int num, int vertex, int face_num) {
 
             if (ta != 0) {
                 if (second_nav_check == 0) {
-                    vertexInfo2[num].calc_curv += tbta;// *(sin * 1.5);  //점이 포함된 face의 각에 비례
+                    vertexInfo2[num].calc_curv += tbta;// *(sin * 1.5);  //��� ���Ե� face�� ���� ���
                     vertexInfo2[num].calc_count++;
                 }
                 else {
@@ -428,7 +427,7 @@ void calc_color() {
                 second_nav_check = 0;
                 calc_sin(i, k, face_num);
 
-                //near vertex의 near vertex와의 sin값 계산
+                //near vertex�� near vertex���� sin�� ���
                 for (int l = 0; l < vertexInfo[k].near_vertex.size(); l++) {
                     int m = vertexInfo[k].near_vertex[l];
                     int face_num2 = vertexInfo[k].near_face[l / 2];
@@ -506,7 +505,7 @@ void calc_color() {
                 second_nav_check = 0;
                 calc_sin(i, k, face_num);
 
-                //near vertex의 near vertex와의 sin값 계산
+                //near vertex�� near vertex���� sin�� ���
                 for (int l = 0; l < vertexInfo2[k].near_vertex.size(); l++) {
                     int m = vertexInfo2[k].near_vertex[l];
                     int face_num2 = vertexInfo2[k].near_face[l / 2];
@@ -570,7 +569,7 @@ void calc_box_color() {
 
         switch (How)
         {
-        case 1: //우측 상단으로 선택
+        case 1: //���� ������ ����
             if ((StartmouseX <= vPos.x) && (vPos.x <= EndmouseX)) {
                 if ((StartmouseY <= vPos.y) && (vPos.y <= EndmouseY)) {
                     bColor.push_back(glm::vec3(0.74, 1., 0.));
@@ -583,7 +582,7 @@ void calc_box_color() {
                 bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
             }
             break;
-        case 2: //우측 하단으로 선택
+        case 2: //���� �ϴ���� ����
             if ((StartmouseX <= vPos.x) && (vPos.x <= EndmouseX)) {
                 if ((EndmouseY <= vPos.y) && (vPos.y <= StartmouseY)) {
                     bColor.push_back(glm::vec3(0.74, 1., 0.));
@@ -596,7 +595,7 @@ void calc_box_color() {
                 bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
             }
             break;
-        case 3: //좌측 상단으로 선택
+        case 3: //���� ������ ����
             if ((EndmouseX <= vPos.x) && (vPos.x <= StartmouseX)) {
                 if ((StartmouseY <= vPos.y) && (vPos.y <= EndmouseY)) {
                     bColor.push_back(glm::vec3(0.74, 1., 0.));
@@ -609,7 +608,7 @@ void calc_box_color() {
                 bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
             }
             break;
-        case 4: //좌측 하단으로 선택
+        case 4: //���� �ϴ���� ����
             if ((EndmouseX <= vPos.x) && (vPos.x <= StartmouseX)) {
                 if ((EndmouseY <= vPos.y) && (vPos.y <= StartmouseY)) {
                     bColor.push_back(glm::vec3(0.74, 1., 0.));
@@ -636,7 +635,7 @@ void calc_box_color2() {
 
         switch (How)
         {
-        case 1: //우측 상단으로 선택
+        case 1: //���� ������ ����
             if ((StartmouseX2 <= vPos2.x) && (vPos2.x <= EndmouseX2)) {
                 if ((StartmouseY2 <= vPos2.y) && (vPos2.y <= EndmouseY2)) {
                     bColor2.push_back(glm::vec3(0.74, 1., 0.));
@@ -649,7 +648,7 @@ void calc_box_color2() {
                 bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
             }
             break;
-        case 2: //우측 하단으로 선택
+        case 2: //���� �ϴ���� ����
             if ((StartmouseX2 <= vPos2.x) && (vPos2.x <= EndmouseX2)) {
                 if ((EndmouseY2 <= vPos2.y) && (vPos2.y <= StartmouseY2)) {
                     bColor2.push_back(glm::vec3(0.74, 1., 0.));
@@ -662,7 +661,7 @@ void calc_box_color2() {
                 bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
             }
             break;
-        case 3: //좌측 상단으로 선택
+        case 3: //���� ������ ����
             if ((EndmouseX2 <= vPos2.x) && (vPos2.x <= StartmouseX2)) {
                 if ((StartmouseY2 <= vPos2.y) && (vPos2.y <= EndmouseY2)) {
                     bColor2.push_back(glm::vec3(0.74, 1., 0.));
@@ -675,7 +674,7 @@ void calc_box_color2() {
                 bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
             }
             break;
-        case 4: //좌측 하단으로 선택
+        case 4: //���� �ϴ���� ����
             if ((EndmouseX2 <= vPos2.x) && (vPos2.x <= StartmouseX2)) {
                 if ((EndmouseY2 <= vPos2.y) && (vPos2.y <= StartmouseY2)) {
                     bColor2.push_back(glm::vec3(0.74, 1., 0.));
@@ -868,7 +867,7 @@ void parseVertex(string line, float scale) {
     }
 
     short blank_index;
-    short now_index = 2; //이 전에 어디서부터 찾았는지, v때기
+    short now_index = 2; //�� �� ��𼭺��� ã�Ҵ���, v����
     glm::vec3 vertex;
     int count = 0;
 
@@ -983,8 +982,8 @@ void parseFace(string line, string currentMaterialName) {
 
     int blank_index;
     vector<int> now_blank_index(4);
-    int start_index[4] = { 2, 0 }; // 처음 start = 2(f 제외하기 위함)
-    int start_divide_index[4] = { 2, }; //divide용 start
+    int start_index[4] = { 2, 0 }; // ó� start = 2(f ����ϱ� ���)
+    int start_divide_index[4] = { 2, }; //divide�� start
     int pusha, pushb, pushc, pushd;
     int word_count = 0;
     int slash_index;
@@ -1006,7 +1005,7 @@ void parseFace(string line, string currentMaterialName) {
 
     if (word_count == 2) {         //3 face
 
-       //sub_line[3].length() ==0 -> word_count ==2로 변경
+       //sub_line[3].length() ==0 -> word_count ==2�� ����
         slash_index = line.find("/");   //check "/"
         if (slash_index == -1) {            //not exist "/"
            //cout << "no slash" << endl;
@@ -1514,14 +1513,14 @@ void renderScene(void)
     glBindVertexArray(vao[0]);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
-    if (color_step == 1) {  //근처 1단계 탐색한 색
+    if (color_step == 1) {  //��ó 1�ܰ� Ž���� ��
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor.size(), aColor.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
         glVertexAttribPointer(bColor, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
         glEnableVertexAttribArray(bColor);
     }
-    else if (color_step == 2) { //근처 2단계 탐색한 색
+    else if (color_step == 2) { //��ó 2�ܰ� Ž���� ��
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor_v2.size(), aColor_v2.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
@@ -1529,7 +1528,7 @@ void renderScene(void)
         glEnableVertexAttribArray(bColor);
     }
 
-    if (!bColor.empty()) { // 박스를 지정했을 경우
+    if (!bColor.empty()) { // �ڽ��� ������ ���
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * bColor.size(), bColor.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
@@ -1587,14 +1586,13 @@ void renderScene2(void) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
     if (color_step == 1) { //근처 1단계 탐색한 색
-
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor2.size(), aColor2.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
         glVertexAttribPointer(bColor, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
         glEnableVertexAttribArray(bColor);
     }
-    else if (color_step == 2) { //근처 2단계 탐색한 색
+    else if (color_step == 2) { //��ó 2�ܰ� Ž���� ��
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor2_v2.size(), aColor2_v2.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
@@ -1602,7 +1600,7 @@ void renderScene2(void) {
         glEnableVertexAttribArray(bColor);
     }
 
-    if (!bColor2.empty()) { // 박스를 지정했을 경우
+    if (!bColor2.empty()) { // �ڽ��� ������ ���
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * bColor2.size(), bColor2.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
@@ -1784,7 +1782,7 @@ void myKeyboard(unsigned char key, int x, int y) {
     case 'x':
         color_step = 2;
         break;
-    /*case 'c':  //수정예정
+    /*case 'c':  //������
         threshold -= 0.1;
         aColor.clear();
         aColor2.clear();
@@ -2084,16 +2082,16 @@ void myKeyboard2(unsigned char key, int x, int y) {
 
 }
 void myMouseClick(GLint Button, GLint State, int x, int y) {
-    if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE) { //왼쪽 마우스 버튼을 눌렀을 때, 기준점잡기.
+    if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE) { //���� ���콺 ��ư� ����� ��, ��������.
         glUseProgram(programID2);
-        glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0); //빨간 점으로 표시.
+        glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0); //���� ���� ǥ��.
         glUseProgram(programID);
         mouseX = x;
         mouseY = y;
         StartmouseX = (float)((x - 0.5 * (WINDOW_WIDTH / 2)) / (0.5 * (WINDOW_WIDTH / 2)));
         StartmouseY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
     }
-    else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE) { //왼쪽 마우스 뗐을 경우, z값 초기화.
+    else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE) { //���� ���콺 ��� ���, z�� �ʱ�ȭ.
 
         box_vertices[2] = 1;
         box_vertices[5] = 1;
@@ -2106,16 +2104,16 @@ void myMouseClick(GLint Button, GLint State, int x, int y) {
     }
 }
 void myMouseClick2(GLint Button, GLint State, int x, int y) {
-    if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE) { //왼쪽 마우스 버튼을 눌렀을 때, 기준점잡기.
+    if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE) { //���� ���콺 ��ư� ����� ��, ��������.
         glUseProgram(programID2);
-        glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0); //빨간 점으로 표시.
+        glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0); //���� ���� ǥ��.
         glUseProgram(programID);
         mouseX2 = x;
         mouseY2 = y;
         StartmouseX2 = (float)((x - 0.5 * (WINDOW_WIDTH / 2)) / (0.5 * (WINDOW_WIDTH / 2)));
         StartmouseY2 = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
     }
-    else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE) { //왼쪽 마우스 뗐을 경우, z값 초기화.
+    else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE) { //���� ���콺 ��� ���, z�� �ʱ�ȭ.
 
         box_vertices2[2] = 1;
         box_vertices2[5] = 1;
@@ -2128,7 +2126,7 @@ void myMouseClick2(GLint Button, GLint State, int x, int y) {
     }
 }
 void myMouseDrag(int x, int y) {
-    if (Holding == FALSE) { //'/' 안누를 시.
+    if (Holding == FALSE) { //'/' �ȴ��� ��.
         if (mouseX < x) {   //pan right
             if (mouseY < y) {
                 tiltRad -= 0.3f;
@@ -2188,7 +2186,7 @@ void myMouseDrag(int x, int y) {
     glutPostRedisplay();
 }
 void myMouseDrag2(int x, int y) {
-    if (Holding == FALSE) { //'/' 안누를 시.
+    if (Holding == FALSE) { //'/' �ȴ��� ��.
 
         if (mouseX2 < x) {   //pan right
             if (mouseY2 < y) {
@@ -2410,7 +2408,7 @@ void init(string file_name, float obj_scale)
 
         glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
 
-        // ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡBox drawingㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+        // �ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�Box drawing�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�
         glUseProgram(programID2);
         glBindVertexArray(vao[1]);
         glGenBuffers(1, &vbo_box);
@@ -2501,7 +2499,7 @@ void init(string file_name, float obj_scale)
 
         glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
 
-        // ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡBox drawingㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+        // �ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�Box drawing�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�
         glUseProgram(programID2);
         glBindVertexArray(vao[1]);
         glGenBuffers(1, &vbo_box);
@@ -2563,22 +2561,6 @@ int main(int argc, char** argv)
     glutMotionFunc(myMouseDrag);
     glutMouseWheelFunc(MyMouseWheelFunc);
 
-
-
-    for (int i = 0; i < 5; i++) {
-        curv_percent[i] = curv_distrib[i] / (float)vertex_count;
-        curv_percent2[i] = curv_distrib2[i] / (float)vertex_count2;
-    }
-    cout << "\t0.0~0.2\t\t0.2~0.4\t\t0.4~0.6\t\t0.6~0.8\t\t0.8~1.0\t\ttotal" << endl;
-    cout<<"count\t" << curv_distrib[0] << "\t\t" << curv_distrib[1] << "\t\t" << curv_distrib[2] << "\t\t" << curv_distrib[3] << "\t\t" << 
-        curv_distrib[4] << "\t\t"<<vertex_count<<endl;
-    cout <<"percent\t"<< curv_percent[0] << "\t" << curv_percent[1] << "\t" << curv_percent[2] << "\t" <<
-        curv_percent[3] << "\t" << curv_percent[4] << endl << endl;
-
-    cout << "count\t" << curv_distrib2[0] << "\t\t" << curv_distrib2[1] << "\t\t" << curv_distrib2[2] << "\t\t" << curv_distrib2[3] << "\t\t" <<
-        curv_distrib2[4] << "\t\t"<< vertex_count2 <<endl;
-    cout <<"percent\t"<< curv_percent2[0] << "\t" << curv_percent2[1] << "\t" << curv_percent2[2] << "\t" <<
-        curv_percent2[3] << "\t" << curv_percent2[4] << endl << endl;
 
     for (int i = 0; i < 5; i++) {
         curv_percent[i] = curv_distrib[i] / (float)vertex_count;
