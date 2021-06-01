@@ -41,7 +41,7 @@ static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 using namespace std;
 
 GLuint programID;
-GLuint programID2; //¹Ú½º ÇÁ·Î±×·¥
+GLuint programID2; //ï¿½Ú½ï¿½ ï¿½ï¿½Î±×·ï¿½
 GLuint VertexArrayID;
 
 clock_t start_time, end_time;
@@ -54,8 +54,8 @@ int mainWindow, subWindow1, subWindow2;
 string filename = "KWAK KYE HUN preOp.obj";
 string filename2 = "KWAK KYE HUN postOp.obj";
 
-string change_filename = "cube.obj";    //¹Ù²Ü ÆÄÀÏ ÀÌ¸§
-string mtlpath; //mtl ÆÄÀÏ¸í ÀúÀå..
+string change_filename = "cube.obj";    //ë°”ê¿€ íŒŒì¼ ì´ë¦„
+string mtlpath; //mtl íŒŒì¼ëª… ì €ì¥..
 float scale = 0.003f;
 float scale2 = 0.003f;
 
@@ -67,14 +67,14 @@ vector<glm::vec3>obj_vertices, obj_vertices2;
 vector<glm::vec2>obj_texcoord, obj_texcoord2;
 vector<glm::vec3>obj_normals, obj_normals2;
 vector<glm::vec3>aColor, aColor_v2, aColor2, aColor2_v2;
-vector<glm::vec3>bColor, bColor2; // box ÈÄ ÄÃ·¯.
+vector<glm::vec3>bColor, bColor2; // box ï¿½ï¿½ ï¿½Ã·ï¿½.
 string sub_line[4];
 string divide_slash[4];
 
 
-//°í±¤¿¬ Ãß°¡
-glm::vec3 first_vec, second_vec;	//calc_sin¿¡¼­ °¢¿¡ µû¸¥ weightÁÖ±â À§ÇÔ
-int second_nav_check = 0; //near vertexÀÇ near vertex Å½»ö ¿©ºÎ
+//ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½
+glm::vec3 first_vec, second_vec;	//calc_sinï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ weightï¿½Ö±ï¿½ ï¿½ï¿½ï¿½
+int second_nav_check = 0; //near vertexï¿½ï¿½ near vertex Å½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 int color_step = 1, color_step2 = 1;
 float threshold = 0.6;
 int curv_distrib[5] = { 0 }, curv_distrib2[5] = { 0 };
@@ -94,17 +94,17 @@ float box_vertices2[12] = {
    0.0f, 0.0f, -1.0f,
    0.0f, 0.0f, -1.0f
 };
-GLuint vbo_box; //¹Ú½º À§Ä¡ ¹öÆÛ
-int mouseX, mouseX2;   // ¸¶¿ì½º·Î ½ÃÁ¡ ÀÌµ¿½Ã ÀüÀÇ ¸¶¿ì½ºÁÂÇ¥ ÀúÀå  / ÃÊ±â ¼³Á¤ -1
+GLuint vbo_box; //ï¿½Ú½ï¿½ ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½
+int mouseX, mouseX2;   // ï¿½ï¿½ï¿½ì½ºï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ì½ºï¿½ï¿½Ç¥ ï¿½ï¿½ï¿½ï¿½  / ï¿½Ê±ï¿½ ï¿½ï¿½ï¿½ -1
 int mouseY, mouseY2;
-float StartmouseX, StartmouseX2; // ¹Ú½º ½ÃÀÛ À§Ä¡ x
-float StartmouseY, StartmouseY2; // ¹Ú½º ½ÃÀÛ À§Ä¡ y
+float StartmouseX, StartmouseX2; // ï¿½Ú½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ä¡ x
+float StartmouseY, StartmouseY2; // ï¿½Ú½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ä¡ y
 float EndmouseX, EndmouseX2; //q
 float EndmouseY, EndmouseY2;
-float varX, varX2; //¹Ú½º ³¡À§Ä¡ x
-float varY, varY2; //¹Ú½º ³¡À§Ä¡ y
+float varX, varX2; //ï¿½Ú½ï¿½ ï¿½ï¿½ï¿½Ä¡ x
+float varY, varY2; //ï¿½Ú½ï¿½ ï¿½ï¿½ï¿½Ä¡ y
 bool Holding = FALSE;
-clock_t start_t, end_t; // ½Ã°£ °è»ê Àü¿ªº¯¼ö
+clock_t start_t, end_t; // ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
 
 struct Material
 {
@@ -114,15 +114,15 @@ struct Material
     float Ni;
     int illum;
 };
-Material material; //»ı¼º
+Material material; //ï¿½ï¿½
 
 
 struct vertex_info {
     double near_vertex_count = 0;
     glm::vec3 normal_vec = glm::vec3(0., 0., 0.);
     float normal_count = 0;
-    vector<int>near_vertex;   //ÁÖº¯ Á¡
-    vector<int> near_face;   //Å×½ºÆ®¿ë : near_face_2¿Í °ªÀÌ °°ÀºÁö È®ÀÎÇÏ±â À§ÇÔ
+    vector<int>near_vertex;   //ï¿½Öºï¿½ ï¿½
+    vector<int> near_face;   //ï¿½×½ï¿½Æ®ï¿½ï¿½ : near_face_2ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½
 
     double calc_curv = 0;
     double calc_count = 0;
@@ -133,7 +133,7 @@ struct vertex_info {
 vertex_info* vertexInfo;
 vertex_info* vertexInfo2;
 
-int first_f_check = 0; //Ã³À½ f¸¦ ÀĞ¾ú´ÂÁö Ã¼Å©
+int first_f_check = 0; //Ã³ï¿½ fï¿½ï¿½ ï¿½Ğ¾ï¿½ï¿½ï¿½ï¿½ Ã¼Å©
 
 int vertex_count = 0;
 int vertex_count2 = 0;
@@ -157,8 +157,8 @@ int first = 1, first2 = 1;
 float persRad = 60, persRad2 = 60;
 int lightTurnOnOff = 1, lightTurnOnOff2 = 1;
 
-glm::mat4 realMat = glm::mat4(1.0f), realMat2 = glm::mat4(1.0f); // ¹Ú½ºÁÂÇ¥ °è»êÀ» À§ÇÑ ¸ÅÆ®¸¯½º
-glm::vec4 vPos, vPos2; // ¹Ú½ºÁÂÇ¥ °è»êÀ» À§ÇÑ ÁÂÇ¥
+glm::mat4 realMat = glm::mat4(1.0f), realMat2 = glm::mat4(1.0f); // ï¿½Ú½ï¿½ï¿½ï¿½Ç¥ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½
+glm::vec4 vPos, vPos2; // ï¿½Ú½ï¿½ï¿½ï¿½Ç¥ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥
 glm::mat4 wmat = glm::mat4(1.0f), wmat2 = glm::mat4(1.0f);
 glm::mat4 viewmat = glm::mat4(1.0f), viewmat2 = glm::mat4(1.0f);
 glm::mat4 tiltmat = glm::mat4(1.0f), tiltmat2 = glm::mat4(1.0f);
@@ -178,14 +178,14 @@ void renderScenenew(void);
 void renderScene2(void);
 void renderSceneAll(void);
 void show_graph(double percent[], double percent2[], int len);
-void SelectScale(); // Scale Á¤ÇØÁÖ´Â ÇÔ¼ö : ÃßÈÄ ±¸Çö ¿¹Á¤
+void SelectScale(); //  Scale ì •í•´ì£¼ëŠ” í•¨ìˆ˜ : ì¶”í›„ êµ¬í˜„ ì˜ˆì •
 void changeFile(char* file_str);
 void changeFile2(char* file_str);
-void parseMtllib(string line); //mtl ÆÄÀÏ¸í ÀúÀå.
+void parseMtllib(string line); //mtl ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½.
 void onReadMTLFile(string path);
-void parseKd(string line); // mtlÆÄÀÏÀÇ Kd ÀúÀå.
-void parseKa(string line); // mtlÆÄÀÏÀÇ ka ÀúÀå.
-void parseKs(string line); // mtlÆÄÀÏÀÇ ks ÀúÀå.
+void parseKd(string line); // mtlï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Kd ï¿½ï¿½ï¿½ï¿½.
+void parseKa(string line); // mtlï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ka ï¿½ï¿½ï¿½ï¿½.
+void parseKs(string line); // mtlï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ks ï¿½ï¿½ï¿½ï¿½.
 int HowDrawBox(float start_X, float start_Y, float End_X, float End_Y);
 void clear_subwindow_1() {
     obj_vertices.clear();
@@ -230,7 +230,7 @@ void add_near_vertex_face(int vertex1, int vertex2, int vertex3, int face_num) {
 
         vertexInfo[vertex3].near_vertex.push_back(vertex2);
 
-        //------------------near face¿¡ ³Ö±â--------------------
+        //------------------near faceï¿½ï¿½ ï¿½Ö±ï¿½--------------------
         vertexInfo[vertex1].near_face.push_back(face_num);
 
         vertexInfo[vertex2].near_face.push_back(face_num);
@@ -253,7 +253,7 @@ void add_near_vertex_face(int vertex1, int vertex2, int vertex3, int face_num) {
         vertexInfo2[vertex3].near_vertex.push_back(vertex2);
 
 
-        //------------------near face¿¡ ³Ö±â--------------------
+        //------------------near faceï¿½ï¿½ ï¿½Ö±ï¿½--------------------
         vertexInfo2[vertex1].near_face.push_back(face_num);
 
         vertexInfo2[vertex2].near_face.push_back(face_num);
@@ -273,7 +273,7 @@ void calc_normal(int num, int vertex_n1, int vertex_n2, int vertex_n3) {
         double vz = vec2_1.x * vec3_1.y - vec2_1.y * vec3_1.x;
         glm::vec3 normal = glm::normalize(glm::vec3(vx, vy, vz));
 
-        //face°¢¿¡ µû¶ó sin°ªÀ¸·Î weight¸¦ ÁÜ
+        //faceï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ sinï¿½ï¿½ï¿½ï¿½ï¿½ weightï¿½ï¿½ ï¿½ï¿½
         double size_vec2_1 = sqrt(vec2_1.x * vec2_1.x + vec2_1.y * vec2_1.y + vec2_1.z * vec2_1.z);
         double size_vec3_1 = sqrt(vec3_1.x * vec3_1.x + vec3_1.y * vec3_1.y + vec3_1.z * vec3_1.z);
         double cos = glm::dot(vec2_1, vec3_1) / (size_vec2_1 * size_vec3_1);
@@ -283,9 +283,9 @@ void calc_normal(int num, int vertex_n1, int vertex_n2, int vertex_n3) {
             sin = -sin;
         }
 
-        vertexInfo[num].normal_vec += glm::vec3(normal.x * sin, normal.y * sin, normal.z * sin);     //°¢¿¡ µû¸¥ weight Àû¿ë
+        vertexInfo[num].normal_vec += glm::vec3(normal.x * sin, normal.y * sin, normal.z * sin);     //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ weight ï¿½ï¿½ï¿½
 
-        //vertexInfo[num].normal_vec += normal;      //±âÁ¸
+        //vertexInfo[num].normal_vec += normal;      //ï¿½ï¿½ï¿½
         vertexInfo[num].normal_count++;
     }
     else if (subwindow_num == 2) {
@@ -308,9 +308,9 @@ void calc_normal(int num, int vertex_n1, int vertex_n2, int vertex_n3) {
             sin = -sin;
         }
 
-        vertexInfo2[num].normal_vec += glm::vec3(normal.x * sin, normal.y * sin, normal.z * sin);   //°¢¿¡ µû¸¥ weight Àû¿ë
+        vertexInfo2[num].normal_vec += glm::vec3(normal.x * sin, normal.y * sin, normal.z * sin);   //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ weight ï¿½ï¿½ï¿½
 
-        //vertexInfo2[num].normal_vec += normal;    //±âÁ¸
+        //vertexInfo2[num].normal_vec += normal;    //ï¿½ï¿½ï¿½
         vertexInfo2[num].normal_count++;
     }
 };
@@ -320,8 +320,8 @@ void calc_sin(int num, int vertex, int face_num) {
             double tbta;
 
             glm::vec3 normal = vertexInfo[num].normal_vec;
-            glm::vec3 vertexV = obj_vertices[num];   //±âÁØ vertex
-            glm::vec3 vertexX = obj_vertices[vertex]; //ÀÎÁ¢ÇÑ vertex
+            glm::vec3 vertexV = obj_vertices[num];   //ï¿½ï¿½ï¿½ï¿½ vertex
+            glm::vec3 vertexX = obj_vertices[vertex]; //ï¿½ï¿½ï¿½ï¿½ï¿½ vertex
 
             glm::vec3 vertexX_V = vertexX - vertexV;
             double XdotN = vertexX.x * normal.x + vertexX.y * normal.y + vertexX.z * normal.z;
@@ -334,7 +334,7 @@ void calc_sin(int num, int vertex, int face_num) {
 
             tbta = tb / ta;
 
-            //near vertex°¡ ¼ÓÇÑ faceÀÇ °¢¿¡ µû¶ó weight¸¦ ÁÜ     --¼öÁ¤Áß
+            //near vertexï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ faceï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ weightï¿½ï¿½ ï¿½ï¿½     --ï¿½ï¿½ï¿½ï¿½ï¿½
           /*  int vertex_n1 = vertexIndices[(face_num - 1) * 3];
             int vertex_n2 = vertexIndices[(face_num - 1) * 3 + 1];
             int vertex_n3 = vertexIndices[(face_num - 1) * 3 + 2];
@@ -358,7 +358,7 @@ void calc_sin(int num, int vertex, int face_num) {
 
             if (ta != 0) {
                 if (second_nav_check == 0) {
-                    vertexInfo[num].calc_curv += tbta;// *(sin * 1.5);  //Á¡ÀÌ Æ÷ÇÔµÈ faceÀÇ °¢¿¡ ºñ·Ê
+                    vertexInfo[num].calc_curv += tbta;// *(sin * 1.5);  //ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ôµï¿½ faceï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
                     vertexInfo[num].calc_count++;
                 }
                 else {
@@ -372,8 +372,8 @@ void calc_sin(int num, int vertex, int face_num) {
             double tbta;
 
             glm::vec3 normal = vertexInfo2[num].normal_vec;
-            glm::vec3 vertexV = obj_vertices2[num];   //±âÁØ vertex
-            glm::vec3 vertexX = obj_vertices2[vertex]; //ÀÎÁ¢ÇÑ vertex
+            glm::vec3 vertexV = obj_vertices2[num];   //ï¿½ï¿½ï¿½ï¿½ vertex
+            glm::vec3 vertexX = obj_vertices2[vertex]; //ï¿½ï¿½ï¿½ï¿½ï¿½ vertex
 
             glm::vec3 vertexX_V = vertexX - vertexV;
             double XdotN = vertexX.x * normal.x + vertexX.y * normal.y + vertexX.z * normal.z;
@@ -388,7 +388,7 @@ void calc_sin(int num, int vertex, int face_num) {
 
             if (ta != 0) {
                 if (second_nav_check == 0) {
-                    vertexInfo2[num].calc_curv += tbta;// *(sin * 1.5);  //Á¡ÀÌ Æ÷ÇÔµÈ faceÀÇ °¢¿¡ ºñ·Ê
+                    vertexInfo2[num].calc_curv += tbta;// *(sin * 1.5);  //ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ôµï¿½ faceï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
                     vertexInfo2[num].calc_count++;
                 }
                 else {
@@ -427,7 +427,7 @@ void calc_color() {
                 second_nav_check = 0;
                 calc_sin(i, k, face_num);
 
-                //near vertexÀÇ near vertex¿ÍÀÇ sin°ª °è»ê
+                //near vertexï¿½ï¿½ near vertexï¿½ï¿½ï¿½ï¿½ sinï¿½ï¿½ ï¿½ï¿½ï¿½
                 for (int l = 0; l < vertexInfo[k].near_vertex.size(); l++) {
                     int m = vertexInfo[k].near_vertex[l];
                     int face_num2 = vertexInfo[k].near_face[l / 2];
@@ -505,7 +505,7 @@ void calc_color() {
                 second_nav_check = 0;
                 calc_sin(i, k, face_num);
 
-                //near vertexÀÇ near vertex¿ÍÀÇ sin°ª °è»ê
+                //near vertexï¿½ï¿½ near vertexï¿½ï¿½ï¿½ï¿½ sinï¿½ï¿½ ï¿½ï¿½ï¿½
                 for (int l = 0; l < vertexInfo2[k].near_vertex.size(); l++) {
                     int m = vertexInfo2[k].near_vertex[l];
                     int face_num2 = vertexInfo2[k].near_face[l / 2];
@@ -569,7 +569,7 @@ void calc_box_color() {
 
         switch (How)
         {
-        case 1: //¿ìÃø »ó´ÜÀ¸·Î ¼±ÅÃ
+        case 1: //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if ((StartmouseX <= vPos.x) && (vPos.x <= EndmouseX)) {
                 if ((StartmouseY <= vPos.y) && (vPos.y <= EndmouseY)) {
                     bColor.push_back(glm::vec3(0.74, 1., 0.));
@@ -582,7 +582,7 @@ void calc_box_color() {
                 bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
             }
             break;
-        case 2: //¿ìÃø ÇÏ´ÜÀ¸·Î ¼±ÅÃ
+        case 2: //ï¿½ï¿½ï¿½ï¿½ ï¿½Ï´ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if ((StartmouseX <= vPos.x) && (vPos.x <= EndmouseX)) {
                 if ((EndmouseY <= vPos.y) && (vPos.y <= StartmouseY)) {
                     bColor.push_back(glm::vec3(0.74, 1., 0.));
@@ -595,7 +595,7 @@ void calc_box_color() {
                 bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
             }
             break;
-        case 3: //ÁÂÃø »ó´ÜÀ¸·Î ¼±ÅÃ
+        case 3: //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if ((EndmouseX <= vPos.x) && (vPos.x <= StartmouseX)) {
                 if ((StartmouseY <= vPos.y) && (vPos.y <= EndmouseY)) {
                     bColor.push_back(glm::vec3(0.74, 1., 0.));
@@ -608,7 +608,7 @@ void calc_box_color() {
                 bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
             }
             break;
-        case 4: //ÁÂÃø ÇÏ´ÜÀ¸·Î ¼±ÅÃ
+        case 4: //ï¿½ï¿½ï¿½ï¿½ ï¿½Ï´ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if ((EndmouseX <= vPos.x) && (vPos.x <= StartmouseX)) {
                 if ((EndmouseY <= vPos.y) && (vPos.y <= StartmouseY)) {
                     bColor.push_back(glm::vec3(0.74, 1., 0.));
@@ -635,7 +635,7 @@ void calc_box_color2() {
 
         switch (How)
         {
-        case 1: //¿ìÃø »ó´ÜÀ¸·Î ¼±ÅÃ
+        case 1: //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if ((StartmouseX2 <= vPos2.x) && (vPos2.x <= EndmouseX2)) {
                 if ((StartmouseY2 <= vPos2.y) && (vPos2.y <= EndmouseY2)) {
                     bColor2.push_back(glm::vec3(0.74, 1., 0.));
@@ -648,7 +648,7 @@ void calc_box_color2() {
                 bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
             }
             break;
-        case 2: //¿ìÃø ÇÏ´ÜÀ¸·Î ¼±ÅÃ
+        case 2: //ï¿½ï¿½ï¿½ï¿½ ï¿½Ï´ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if ((StartmouseX2 <= vPos2.x) && (vPos2.x <= EndmouseX2)) {
                 if ((EndmouseY2 <= vPos2.y) && (vPos2.y <= StartmouseY2)) {
                     bColor2.push_back(glm::vec3(0.74, 1., 0.));
@@ -661,7 +661,7 @@ void calc_box_color2() {
                 bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
             }
             break;
-        case 3: //ÁÂÃø »ó´ÜÀ¸·Î ¼±ÅÃ
+        case 3: //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if ((EndmouseX2 <= vPos2.x) && (vPos2.x <= StartmouseX2)) {
                 if ((StartmouseY2 <= vPos2.y) && (vPos2.y <= EndmouseY2)) {
                     bColor2.push_back(glm::vec3(0.74, 1., 0.));
@@ -674,7 +674,7 @@ void calc_box_color2() {
                 bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
             }
             break;
-        case 4: //ÁÂÃø ÇÏ´ÜÀ¸·Î ¼±ÅÃ
+        case 4: //ï¿½ï¿½ï¿½ï¿½ ï¿½Ï´ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if ((EndmouseX2 <= vPos2.x) && (vPos2.x <= StartmouseX2)) {
                 if ((EndmouseY2 <= vPos2.y) && (vPos2.y <= StartmouseY2)) {
                     bColor2.push_back(glm::vec3(0.74, 1., 0.));
@@ -867,7 +867,7 @@ void parseVertex(string line, float scale) {
     }
 
     short blank_index;
-    short now_index = 2; //ÀÌ Àü¿¡ ¾îµğ¼­ºÎÅÍ Ã£¾Ò´ÂÁö, v¶§±â
+    short now_index = 2; //ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ğ¼­ºï¿½ï¿½ï¿½ Ã£ï¿½Ò´ï¿½ï¿½ï¿½, vï¿½ï¿½ï¿½ï¿½
     glm::vec3 vertex;
     int count = 0;
 
@@ -982,8 +982,8 @@ void parseFace(string line, string currentMaterialName) {
 
     int blank_index;
     vector<int> now_blank_index(4);
-    int start_index[4] = { 2, 0 }; // Ã³À½ start = 2(f Á¦¿ÜÇÏ±â À§ÇÔ)
-    int start_divide_index[4] = { 2, }; //divide¿ë start
+    int start_index[4] = { 2, 0 }; // Ã³ï¿½ start = 2(f ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½)
+    int start_divide_index[4] = { 2, }; //divideï¿½ï¿½ start
     int pusha, pushb, pushc, pushd;
     int word_count = 0;
     int slash_index;
@@ -1005,7 +1005,7 @@ void parseFace(string line, string currentMaterialName) {
 
     if (word_count == 2) {         //3 face
 
-       //sub_line[3].length() ==0 -> word_count ==2·Î º¯°æ
+       //sub_line[3].length() ==0 -> word_count ==2ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         slash_index = line.find("/");   //check "/"
         if (slash_index == -1) {            //not exist "/"
            //cout << "no slash" << endl;
@@ -1447,8 +1447,8 @@ void show_graph(double percent[], double percent2[], int len, CpGnuplotU*plot)
     double boxwidth = 0.3;
     double height_space = boxwidth / 10;
 
-    // CwpGnuplotÀÇ »ı¼ºÀÚ¿¡¼­ ÀÎÀÚ·Î wgnuplot.exeÀÇ ÀüÃ¼ °æ·Î¸¦ ³Ñ°ÜÁØ´Ù.
-    // GnuplotÀ» ¼³Ä¡ÇÑ °æ·Î¿¡ µû¶ó ÀÌ °ªÀ» ¹Ù²ã¾ß ÇÑ´Ù.
+    // CwpGnuplotï¿½ï¿½ ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ú·ï¿½ wgnuplot.exeï¿½ï¿½ ï¿½ï¿½Ã¼ ï¿½ï¿½Î¸ï¿½ ï¿½Ñ°ï¿½ï¿½Ø´ï¿½.
+    // Gnuplotï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ù²ï¿½ï¿½ ï¿½Ñ´ï¿½.
    
 
     FILE* fp = _wfopen(_T("curv_percent.dat"), _T("wt"));
@@ -1513,14 +1513,14 @@ void renderScene(void)
     glBindVertexArray(vao[0]);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
-    if (color_step == 1) {  //±ÙÃ³ 1´Ü°è Å½»öÇÑ »ö
+    if (color_step == 1) {  //ï¿½ï¿½Ã³ 1ï¿½Ü°ï¿½ Å½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor.size(), aColor.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
         glVertexAttribPointer(bColor, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
         glEnableVertexAttribArray(bColor);
     }
-    else if (color_step == 2) { //±ÙÃ³ 2´Ü°è Å½»öÇÑ »ö
+    else if (color_step == 2) { //ï¿½ï¿½Ã³ 2ï¿½Ü°ï¿½ Å½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor_v2.size(), aColor_v2.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
@@ -1528,7 +1528,7 @@ void renderScene(void)
         glEnableVertexAttribArray(bColor);
     }
 
-    if (!bColor.empty()) { // ¹Ú½º¸¦ ÁöÁ¤ÇßÀ» °æ¿ì
+    if (!bColor.empty()) { // ï¿½Ú½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * bColor.size(), bColor.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
@@ -1585,14 +1585,14 @@ void renderScene2(void) {
     glBindVertexArray(vao[0]);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
-    if (color_step == 1) { //±ÙÃ³ 1´Ü°è Å½»öÇÑ »ö
+    if (color_step == 1) { //ê·¼ì²˜ 1ë‹¨ê³„ íƒìƒ‰í•œ ìƒ‰
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor2.size(), aColor2.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
         glVertexAttribPointer(bColor, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
         glEnableVertexAttribArray(bColor);
     }
-    else if (color_step == 2) { //±ÙÃ³ 2´Ü°è Å½»öÇÑ »ö
+    else if (color_step == 2) { //ï¿½ï¿½Ã³ 2ï¿½Ü°ï¿½ Å½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor2_v2.size(), aColor2_v2.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
@@ -1600,7 +1600,7 @@ void renderScene2(void) {
         glEnableVertexAttribArray(bColor);
     }
 
-    if (!bColor2.empty()) { // ¹Ú½º¸¦ ÁöÁ¤ÇßÀ» °æ¿ì
+    if (!bColor2.empty()) { // ï¿½Ú½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * bColor2.size(), bColor2.data(), GL_STATIC_DRAW);
         GLint bColor = glGetAttribLocation(programID, "a_Color");
@@ -1782,7 +1782,7 @@ void myKeyboard(unsigned char key, int x, int y) {
     case 'x':
         color_step = 2;
         break;
-    /*case 'c':  //¼öÁ¤¿¹Á¤
+    /*case 'c':  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         threshold -= 0.1;
         aColor.clear();
         aColor2.clear();
@@ -2082,16 +2082,16 @@ void myKeyboard2(unsigned char key, int x, int y) {
 
 }
 void myMouseClick(GLint Button, GLint State, int x, int y) {
-    if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE) { //¿ŞÂÊ ¸¶¿ì½º ¹öÆ°À» ´­·¶À» ¶§, ±âÁØÁ¡Àâ±â.
+    if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE) { //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ì½º ï¿½ï¿½Æ°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
         glUseProgram(programID2);
-        glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0); //»¡°£ Á¡À¸·Î Ç¥½Ã.
+        glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0); //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½.
         glUseProgram(programID);
         mouseX = x;
         mouseY = y;
         StartmouseX = (float)((x - 0.5 * (WINDOW_WIDTH / 2)) / (0.5 * (WINDOW_WIDTH / 2)));
         StartmouseY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
     }
-    else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE) { //¿ŞÂÊ ¸¶¿ì½º ¶ÃÀ» °æ¿ì, z°ª ÃÊ±âÈ­.
+    else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE) { //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ì½º ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½, zï¿½ï¿½ ï¿½Ê±ï¿½È­.
 
         box_vertices[2] = 1;
         box_vertices[5] = 1;
@@ -2104,16 +2104,16 @@ void myMouseClick(GLint Button, GLint State, int x, int y) {
     }
 }
 void myMouseClick2(GLint Button, GLint State, int x, int y) {
-    if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE) { //¿ŞÂÊ ¸¶¿ì½º ¹öÆ°À» ´­·¶À» ¶§, ±âÁØÁ¡Àâ±â.
+    if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE) { //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ì½º ï¿½ï¿½Æ°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
         glUseProgram(programID2);
-        glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0); //»¡°£ Á¡À¸·Î Ç¥½Ã.
+        glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0); //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½.
         glUseProgram(programID);
         mouseX2 = x;
         mouseY2 = y;
         StartmouseX2 = (float)((x - 0.5 * (WINDOW_WIDTH / 2)) / (0.5 * (WINDOW_WIDTH / 2)));
         StartmouseY2 = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
     }
-    else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE) { //¿ŞÂÊ ¸¶¿ì½º ¶ÃÀ» °æ¿ì, z°ª ÃÊ±âÈ­.
+    else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE) { //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ì½º ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½, zï¿½ï¿½ ï¿½Ê±ï¿½È­.
 
         box_vertices2[2] = 1;
         box_vertices2[5] = 1;
@@ -2126,7 +2126,7 @@ void myMouseClick2(GLint Button, GLint State, int x, int y) {
     }
 }
 void myMouseDrag(int x, int y) {
-    if (Holding == FALSE) { //'/' ¾È´©¸¦ ½Ã.
+    if (Holding == FALSE) { //'/' ï¿½È´ï¿½ï¿½ï¿½ ï¿½ï¿½.
         if (mouseX < x) {   //pan right
             if (mouseY < y) {
                 tiltRad -= 0.3f;
@@ -2186,7 +2186,7 @@ void myMouseDrag(int x, int y) {
     glutPostRedisplay();
 }
 void myMouseDrag2(int x, int y) {
-    if (Holding == FALSE) { //'/' ¾È´©¸¦ ½Ã.
+    if (Holding == FALSE) { //'/' ï¿½È´ï¿½ï¿½ï¿½ ï¿½ï¿½.
 
         if (mouseX2 < x) {   //pan right
             if (mouseY2 < y) {
@@ -2408,7 +2408,7 @@ void init(string file_name, float obj_scale)
 
         glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
 
-        // ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤ÑBox drawing¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ
+        // ï¿½Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤ï¿½Box drawingï¿½Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤ï¿½
         glUseProgram(programID2);
         glBindVertexArray(vao[1]);
         glGenBuffers(1, &vbo_box);
@@ -2499,7 +2499,7 @@ void init(string file_name, float obj_scale)
 
         glUniform1i(glGetUniformLocation(programID, "lightTurnOnOff"), lightTurnOnOff);
 
-        // ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤ÑBox drawing¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ
+        // ï¿½Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤ï¿½Box drawingï¿½Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤ï¿½
         glUseProgram(programID2);
         glBindVertexArray(vao[1]);
         glGenBuffers(1, &vbo_box);
@@ -2560,7 +2560,6 @@ int main(int argc, char** argv)
     glutMouseFunc(myMouseClick2);
     glutMotionFunc(myMouseDrag);
     glutMouseWheelFunc(MyMouseWheelFunc);
-
 
 
     for (int i = 0; i < 5; i++) {
