@@ -83,6 +83,10 @@ Index of this file:
 #include <math.h>           // sqrtf, powf, cosf, sinf, floorf, ceilf
 #include <stdio.h>          // vsnprintf, sscanf, printf
 #include <stdlib.h>         // NULL, malloc, free, atoi
+#include <vector>
+#include <filesystem>
+#include <string>
+#include <iostream>
 #if defined(_MSC_VER) && _MSC_VER <= 1500 // MSVC 2008 or earlier
 #include <stddef.h>         // intptr_t
 #else
@@ -337,7 +341,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
     // We specify a default position/size in case there's no data in the .ini file.
     // We only do it to make the demo applications a little more welcoming, but typically this isn't required.
     const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 1250, main_viewport->WorkPos.y + 50), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 1250, main_viewport->WorkPos.y + 20), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(300, 500), ImGuiCond_FirstUseEver);
 
     // Main body of the Demo window starts here.
@@ -393,14 +397,85 @@ void ImGui::ShowDemoWindow(bool* p_open)
 
     ImGui::Text("please select Obj File ");
     ImGui::Spacing();
+
     if (ImGui::CollapsingHeader("Select Patient"))
     {
         if (ImGui::TreeNode("Patient"))
         {
-            static int clicked = 0;
-            if (ImGui::Button("YuSample.obj")) {
-                clicked++;
-                clickbug = 1;
+            if (ImGui::BeginListBox("Patient list"))
+            {
+                //-------------------------FileStream-----------------------------
+                //std::string dir = "patient/";
+                //std::vector<std::string> filelist_paths;
+                //int pathnum; //파일 개수
+                //int path_count = 0;
+
+                //namespace fs = std::filesystem;
+                //for (auto& p : fs::recursive_directory_iterator(dir)) {
+                //    filelist_paths.push_back(p.path().string());
+                //}
+                //
+                //pathnum = filelist_paths.size();
+                //char* items1[1];
+
+                //for (auto str : filelist_paths) {
+                //    int slashindex;
+                //    slashindex = str.find("/");
+                //    str = str.substr(slashindex + 1);
+
+                //    std::vector<char> writable(str.begin(), str.end());
+                //    writable.push_back('\0');
+                //    char* ptr = &writable[0];
+
+                //    items1[path_count] = "AAAA";
+                //    std:: cout << items1[path_count];
+                //    path_count++;
+
+                //}
+
+
+                const char* items[] = { "BAE YONG KYU postOp.obj",
+                    "BAE YONG KYU preOp.obj", 
+                    "CHUN CHONG HO.obj", 
+                    "EOM GYEONG HO preOp.obj", 
+                    "EOM KYEONG HO postOp.obj", 
+                    "HAN JEONG SUK.obj", 
+                    "JEONG JI MIN.obj", 
+                    "JEONG UN KUK postOp.obj", 
+                    "JEONG UN KUK preOp.obj", 
+                    "JU IN KI postOp.obj", 
+                    "JU IN KI preOp.obj", 
+                    "JU YEONG SEOK.obj", 
+                    "KANG JI SEONG postOp.obj", 
+                    "KANG JI SEONG preOp.obj"
+                    "KIM JI HUN.obj"
+                    "KIM YEONG JO postOp.obj"
+                    "KIM YEONG JO preOp.obj"
+                    "KIM YONG YEON.obj"
+                    "KWAK HUI SEONG.obj"
+                    "KWAK JEONG YEON.obj"
+                    "KWAK KYE HUN postOp.obj"
+                    "KWAK KYE HUN preOp.obj"
+                    "LEE MAN CHEOL postOp.obj"
+                    "LEE MAN CHEOL preOp.obj"
+                    "MUN KYEONG LAN postOp.obj"
+                    "MUN KYEONG LAN preOp.obj"
+                    "PARK HYEONG SAM postOp.obj"
+                    "PARK HYEONG SAM preOp.obj"
+                };
+                static int item_current_idx = 0; // Here we store our selection data as an index.
+
+                for (int n = 0; n < IM_ARRAYSIZE(items); n++)
+                {
+                    const bool is_selected = (item_current_idx == n);
+                    if (ImGui::Selectable(items[n], is_selected))
+                        item_current_idx = n;
+
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndListBox();
             }
 
             ImGui::TreePop();
@@ -1087,9 +1162,9 @@ static void ShowDemoWindowWidgets()
 
     if (ImGui::TreeNode("List boxes"))
     {
-        // Using the generic BeginListBox() API, you have full control over how to display the combo contents.
-        // (your selection data could be an index, a pointer to the object, an id for the object, a flag intrusively
-        // stored in the object itself, etc.)
+        
+
+        
         const char* items[] = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO" };
         static int item_current_idx = 0; // Here we store our selection data as an index.
         if (ImGui::BeginListBox("listbox 1"))
