@@ -51,8 +51,8 @@ double tt2 = 0.0;
 
 int mainWindow, subWindow1, subWindow2;
 
-string filename = "PARK HYEONG SAM preOp.obj";
-string filename2 = "PARK HYEONG SAM postOp.obj";
+string filename = "LEE MAN CHEOL preOp.obj";
+string filename2 = "LEE MAN CHEOL postOp.obj";
 
 string change_filename = "cube.obj";    //바꿀 파일 이름
 string mtlpath; //mtl 파일명 저장..
@@ -96,6 +96,7 @@ float box_vertices2[12] = {
    0.0f, 0.0f, -1.0f,
    0.0f, 0.0f, -1.0f
 };
+
 GLuint vbo_box; //박스 위치 버퍼
 int mouseX, mouseX2;   // 마우스로 시점 이동시 전의 마우스좌표 저장  / 초기 설정 -1
 int mouseY, mouseY2;
@@ -105,7 +106,13 @@ float EndmouseX, EndmouseX2; //q
 float EndmouseY, EndmouseY2;
 float varX, varX2; //박스 끝위치 x
 float varY, varY2; //박스 끝위치 y
+float MovevarX, MovevarY; //움직인 위치
+float MovevarX2, MovevarY2;
+glm::vec4 imMovevec;
 bool Holding = FALSE;
+bool BoxHolding = FALSE; // BOX DRAG
+bool BoxMoving = FALSE; //박스 움직이는중
+bool BoxMoving2 = FALSE; //박스 움직이는중
 clock_t start_t, end_t; // 시간 계산 전역변수
 
 struct Material
@@ -170,6 +177,9 @@ glm::mat4 orthoMat = glm::mat4(1.0f), orthoMat2 = glm::mat4(1.0f);
 glm::mat4 projectmat = glm::mat4(1.0f), projectmat2 = glm::mat4(1.0f);
 glm::mat4 normalMat = glm::mat4(1.0f), normalMat2 = glm::mat4(1.0f);
 glm::vec3 lightPos = glm::vec3(10.0f, 10.0f, 10.0f), lightPos2 = glm::vec3(10.0f, 10.0f, 10.0f);
+
+glm::mat4 movemat = glm::mat4(1.0f);
+glm::mat4 movemat2 = glm::mat4(1.0f);
 
 GLuint vbo[2];
 GLuint vao[2];
@@ -1620,6 +1630,10 @@ void renderScene(void)
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, box_vertices, GL_STATIC_DRAW);
     GLuint vtxPosition2 = glGetAttribLocation(programID2, "vtxPosition");
     glVertexAttribPointer(vtxPosition2, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+
+    GLuint moveID = glGetUniformLocation(programID2, "movemat");
+    glUniformMatrix4fv(moveID, 1, GL_FALSE, &movemat[0][0]);
+
     glDrawArrays(GL_LINE_LOOP, 0, 4);
 
     glUseProgram(programID);
@@ -1693,6 +1707,10 @@ void renderScene2(void) {
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, box_vertices2, GL_STATIC_DRAW);
     GLuint vtxPosition2 = glGetAttribLocation(programID2, "vtxPosition");
     glVertexAttribPointer(vtxPosition2, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+
+    GLuint moveID = glGetUniformLocation(programID2, "movemat");
+    glUniformMatrix4fv(moveID, 1, GL_FALSE, &movemat2[0][0]);
+
     glDrawArrays(GL_LINE_LOOP, 0, 4);
 
     glUseProgram(programID);
@@ -1708,6 +1726,9 @@ void myKeyboard(unsigned char key, int x, int y) {
     GLint vtxPosition = glGetAttribLocation(programID, "vtxPosition");
     GLint Color = glGetAttribLocation(programID, "a_Color");
     switch (key) {
+    case '.':
+        BoxHolding = !BoxHolding;
+        break;
     case '/':
         Holding = !Holding;
         break;
@@ -2157,7 +2178,7 @@ void myKeyboard2(unsigned char key, int x, int y) {
 
 }
 void myMouseClick(GLint Button, GLint State, int x, int y) {
-    if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE) { //왼쪽 마우스 버튼을 눌렀을 때, 기준점잡기.
+    if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE && BoxHolding == FALSE) { //왼쪽 마우스 버튼을 눌렀을 때, 기준점잡기.
         glUseProgram(programID2);
         glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0); //빨간 점으로 표시.
         glUseProgram(programID);
@@ -2165,13 +2186,13 @@ void myMouseClick(GLint Button, GLint State, int x, int y) {
         mouseY = y;
         StartmouseX = (float)((x - 0.5 * SUBWINDOW_WIDTH) / (0.5 * SUBWINDOW_WIDTH));
         StartmouseY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
-        //추가
+
         mouseX2 = x;
         mouseY2 = y;
         StartmouseX2 = StartmouseX;
         StartmouseY2 = StartmouseY;
     }
-    else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE) { //왼쪽 마우스 뗐을 경우, z값 초기화.
+    else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE && BoxHolding == FALSE) { //왼쪽 마우스 뗐을 경우, z값 초기화.
 
         box_vertices[2] = 1;
         box_vertices[5] = 1;
@@ -2183,7 +2204,6 @@ void myMouseClick(GLint Button, GLint State, int x, int y) {
         boxto_change_graph();
 
 
-        //추가
         box_vertices2[2] = 1;
         box_vertices2[5] = 1;
         box_vertices2[8] = 1;
@@ -2195,10 +2215,64 @@ void myMouseClick(GLint Button, GLint State, int x, int y) {
 
         show_graph(curv_percent, curv_percent2, 5, &plot);
 
+        //추가
+
+        
+
+    }
+    
+    if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE && BoxHolding == TRUE) {
+        BoxMoving = TRUE;
+        StartmouseX = (float)((x - 0.5 * SUBWINDOW_WIDTH) / (0.5 * SUBWINDOW_WIDTH));
+        StartmouseY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
+        box_vertices[2] = -1;
+        box_vertices[5] = -1;
+        box_vertices[8] = -1;
+        box_vertices[11] = -1;
+        glutPostRedisplay();
+
+    }
+    else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE && BoxHolding == TRUE) {
+        EndmouseX = (float)((x - 0.5 * SUBWINDOW_WIDTH) / (0.5 * SUBWINDOW_WIDTH));
+        EndmouseY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
+        BoxMoving = FALSE;
+        
+
+        imMovevec = movemat * glm::vec4(box_vertices[0], box_vertices[1], box_vertices[2], 1.0f);
+        box_vertices[0] = imMovevec.x;
+        box_vertices[1] = imMovevec.y;
+        imMovevec = movemat * glm::vec4(box_vertices[3], box_vertices[4], box_vertices[5], 1.0f);
+        box_vertices[3] = imMovevec.x;
+        box_vertices[4] = imMovevec.y;
+        imMovevec = movemat *  glm::vec4(box_vertices[6], box_vertices[7], box_vertices[8], 1.0f);
+        box_vertices[6] = imMovevec.x;
+        box_vertices[7] = imMovevec.y;
+        imMovevec = movemat *  glm::vec4(box_vertices[9], box_vertices[10], box_vertices[11], 1.0f);
+        box_vertices[9] = imMovevec.x;
+        box_vertices[10] = imMovevec.y;
+        //-----------박스 숨기기
+        box_vertices[2] = 1;
+        box_vertices[5] = 1;
+        box_vertices[8] = 1;
+        box_vertices[11] = 1;
+        //-----------박스 숨기기
+        //-----------movemat 초기화
+        movemat = glm::mat4(1.0f);
+        //-----------movemat 초기화
+        //-----------calc box color 위해 start, end좌표 다시 넣어주기
+        StartmouseX = box_vertices[0];
+        StartmouseY = box_vertices[1];
+        EndmouseX = box_vertices[6];
+        EndmouseY = box_vertices[7];
+        //-----------calc box color 위해 start, end좌표 다시 넣어주기
+        calc_box_color();
+        boxto_change_graph();
+        glutPostRedisplay();
+        show_graph(curv_percent, curv_percent2, 5, &plot);
     }
 }
 void myMouseClick2(GLint Button, GLint State, int x, int y) {
-    if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE) { //왼쪽 마우스 버튼을 눌렀을 때, 기준점잡기.
+    if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE && BoxHolding == FALSE) { //왼쪽 마우스 버튼을 눌렀을 때, 기준점잡기.
         glUseProgram(programID2);
         glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0); //빨간 점으로 표시.
         glUseProgram(programID);
@@ -2212,7 +2286,7 @@ void myMouseClick2(GLint Button, GLint State, int x, int y) {
         StartmouseX = StartmouseX2;
         StartmouseY = StartmouseY2;
     }
-    else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE) { //왼쪽 마우스 뗐을 경우, z값 초기화.
+    else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE && BoxHolding == FALSE) { //왼쪽 마우스 뗐을 경우, z값 초기화.
 
         box_vertices[2] = 1;
         box_vertices[5] = 1;
@@ -2236,6 +2310,55 @@ void myMouseClick2(GLint Button, GLint State, int x, int y) {
 
         show_graph(curv_percent, curv_percent2, 5, &plot);
 
+    }
+    if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE && BoxHolding == TRUE) {
+        BoxMoving2 = TRUE;
+        StartmouseX2 = (float)((x - 0.5 * SUBWINDOW_WIDTH) / (0.5 * SUBWINDOW_WIDTH));
+        StartmouseY2 = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
+        box_vertices2[2] = -1;
+        box_vertices2[5] = -1;
+        box_vertices2[8] = -1;
+        box_vertices2[11] = -1;
+        glutPostRedisplay();
+
+    }
+    else if ((Button == GLUT_LEFT_BUTTON && State == GLUT_UP) && Holding == TRUE && BoxHolding == TRUE) {
+        EndmouseX2 = (float)((x - 0.5 * SUBWINDOW_WIDTH) / (0.5 * SUBWINDOW_WIDTH));
+        EndmouseY2 = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
+        BoxMoving2 = FALSE;
+
+
+        imMovevec = movemat2 * glm::vec4(box_vertices2[0], box_vertices2[1], box_vertices2[2], 1.0f);
+        box_vertices2[0] = imMovevec.x;
+        box_vertices2[1] = imMovevec.y;
+        imMovevec = movemat2 * glm::vec4(box_vertices2[3], box_vertices2[4], box_vertices2[5], 1.0f);
+        box_vertices2[3] = imMovevec.x;
+        box_vertices2[4] = imMovevec.y;
+        imMovevec = movemat2 * glm::vec4(box_vertices2[6], box_vertices2[7], box_vertices2[8], 1.0f);
+        box_vertices2[6] = imMovevec.x;
+        box_vertices2[7] = imMovevec.y;
+        imMovevec = movemat2 * glm::vec4(box_vertices2[9], box_vertices2[10], box_vertices2[11], 1.0f);
+        box_vertices2[9] = imMovevec.x;
+        box_vertices2[10] = imMovevec.y;
+        //-----------박스 숨기기
+        box_vertices2[2] = 1;
+        box_vertices2[5] = 1;
+        box_vertices2[8] = 1;
+        box_vertices2[11] = 1;
+        //-----------박스 숨기기
+        //-----------movemat 초기화
+        movemat2 = glm::mat4(1.0f);
+        //-----------movemat 초기화
+        //-----------calc box color 위해 start, end좌표 다시 넣어주기
+        StartmouseX2 = box_vertices2[0];
+        StartmouseY2 = box_vertices2[1];
+        EndmouseX2 = box_vertices2[6];
+        EndmouseY2 = box_vertices2[7];
+        //-----------calc box color 위해 start, end좌표 다시 넣어주기
+        calc_box_color2();
+        boxto_change_graph2();
+        glutPostRedisplay();
+        show_graph(curv_percent, curv_percent2, 5, &plot);
     }
 }
 void myMouseDrag(int x, int y) {
@@ -2277,7 +2400,7 @@ void myMouseDrag(int x, int y) {
         }
 
     }
-    else {
+    else if(BoxHolding == FALSE) {
         varX = (float)((x - 0.5 * SUBWINDOW_WIDTH) / (0.5 * SUBWINDOW_WIDTH));
         varY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
         box_vertices[0] = StartmouseX;
@@ -2306,6 +2429,15 @@ void myMouseDrag(int x, int y) {
         box_vertices2[5] = -1;
         box_vertices2[8] = -1;
         box_vertices2[11] = -1;
+    }
+    else if (BoxMoving == TRUE) {
+        varX = (float)((x - 0.5 * SUBWINDOW_WIDTH) / (0.5 * SUBWINDOW_WIDTH));
+        varY = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
+        MovevarX = StartmouseX - varX;
+        MovevarY = StartmouseY - varY;
+        movemat = glm::translate(glm::vec3(-MovevarX, -MovevarY, 0));
+
+        
     }
 
     glutPostRedisplay();
@@ -2350,7 +2482,7 @@ void myMouseDrag2(int x, int y) {
         }
 
     }
-    else {
+    else if (BoxHolding == FALSE) {
 
         varX2 = (float)((x - 0.5 * SUBWINDOW_WIDTH) / (0.5 * SUBWINDOW_WIDTH));
         varY2 = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
@@ -2381,6 +2513,15 @@ void myMouseDrag2(int x, int y) {
         box_vertices[8] = -1;
         box_vertices[11] = -1;
         //추가
+
+    }
+    else if (BoxMoving2== TRUE) {
+        varX2 = (float)((x - 0.5 * SUBWINDOW_WIDTH) / (0.5 * SUBWINDOW_WIDTH));
+        varY2 = -((float)((y - 0.5 * WINDOW_HEIGHT) / (0.5 * WINDOW_HEIGHT)));
+        MovevarX2 = StartmouseX2 - varX2;
+        MovevarY2 = StartmouseY2 - varY2;
+        movemat2 = glm::translate(glm::vec3(-MovevarX2, -MovevarY2, 0));
+
 
     }
 
@@ -2486,8 +2627,7 @@ void init(string file_name, float obj_scale)
 
         double total_t = (double)(end_time - start_time);
         cout << "Time : " << total_t / 1000. << endl;
-        cout << "ParseVertex Time : " << tt2 / 1000. << endl;
-        cout << "ParseFace Time : " << tt1 / 1000. << endl;
+
         cout << endl;
         calc_color();
 
@@ -2561,6 +2701,9 @@ void init(string file_name, float obj_scale)
         glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
         glEnableVertexAttribArray(vtxPosition);
 
+        GLuint moveID = glGetUniformLocation(programID2, "movemat");
+        glUniformMatrix4fv(moveID, 1, GL_FALSE, &movemat[0][0]);
+
         //glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0);
     }
     else if (subwindow_num == 2) {                                       //subwindow 2
@@ -2577,7 +2720,12 @@ void init(string file_name, float obj_scale)
         glClearColor(0.85f, 0.85f, 0.85f, 1.0);
         glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
+        start_time = clock();
         loadObj2(file_name, obj_scale);
+        end_time = clock();
+
+        double total_t = (double)(end_time - start_time);
+        cout << "Time : " << total_t / 1000. << endl;
 
 
         calc_color();
@@ -2652,6 +2800,9 @@ void init(string file_name, float obj_scale)
         glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
         glEnableVertexAttribArray(vtxPosition);
 
+        GLuint moveID = glGetUniformLocation(programID2, "movemat");
+        glUniformMatrix4fv(moveID, 1, GL_FALSE, &movemat2[0][0]);
+
         //glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0);
     }
 
@@ -2700,7 +2851,7 @@ int main(int argc, char** argv)
     glutDisplayFunc(renderSceneAll);
     glutKeyboardFunc(myKeyboard);
     glutMouseFunc(myMouseClick2);
-    glutMotionFunc(myMouseDrag);
+    glutMotionFunc(myMouseDrag2);
     glutMouseWheelFunc(MyMouseWheelFunc);
 
 
