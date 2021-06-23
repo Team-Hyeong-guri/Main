@@ -4,12 +4,15 @@ in vec3 vtxPosition;
 in vec3 a_Color;
 
 out vec3 v_Color;
+uniform mat4 movemat;
 
 void main()
 {  
 
    	v_Color = a_Color;
 
-	gl_Position = vec4(vtxPosition,1.0f);
+    vec4 vPos = vec4(vtxPosition, 1.0f);
+
+    gl_Position = movemat * vPos;
 
 }
