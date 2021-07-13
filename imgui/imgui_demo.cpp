@@ -191,7 +191,13 @@ int clickbug = 0;
 int curvature_1 = 0;
 int curvature_2 = 0;
 int changeclick = 0;
+float limittestZ = 0.0f;
+float limittestZ2 = 0.0f;
+bool changelimit = false;
+bool changelimit2 = false;
 char clickname[30];
+float zindex1 = 0.0f;
+float zindex2 = 0.0f;
 
 // Helper to display a little (?) mark which shows a tooltip when hovered.
 // In your own code you may want to display an actual icon if you are using a merged icon fonts (see docs/FONTS.md)
@@ -396,7 +402,6 @@ void ImGui::ShowDemoWindow(bool* p_open)
     }
 
     ImGui::Text("please select Obj File ");
-    ImGui::Spacing();
 
     if (ImGui::CollapsingHeader("Select Patient"))
     {
@@ -448,20 +453,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
                     "JU YEONG SEOK.obj", 
                     "KANG JI SEONG postOp.obj", 
                     "KANG JI SEONG preOp.obj"
-                    "KIM JI HUN.obj"
-                    "KIM YEONG JO postOp.obj"
-                    "KIM YEONG JO preOp.obj"
-                    "KIM YONG YEON.obj"
-                    "KWAK HUI SEONG.obj"
-                    "KWAK JEONG YEON.obj"
-                    "KWAK KYE HUN postOp.obj"
-                    "KWAK KYE HUN preOp.obj"
-                    "LEE MAN CHEOL postOp.obj"
-                    "LEE MAN CHEOL preOp.obj"
-                    "MUN KYEONG LAN postOp.obj"
-                    "MUN KYEONG LAN preOp.obj"
-                    "PARK HYEONG SAM postOp.obj"
-                    "PARK HYEONG SAM preOp.obj"
+
                 };
                 static int item_current_idx = 0; // Here we store our selection data as an index.
 
@@ -486,6 +478,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
             if (ImGui::Button("PiggyBank.obj")) {
                 strcpy(clickname, "piggybank.obj");
                 changeclick = 1;
+                
             }
             if (ImGui::Button("cube.obj")) {
                 changeclick = 1;
@@ -495,7 +488,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
             ImGui::TreePop();
         }
     }
-    ImGui::Spacing();
+
     if (ImGui::CollapsingHeader("Curvature Change"))
     {
 
@@ -512,8 +505,25 @@ void ImGui::ShowDemoWindow(bool* p_open)
 
 
     }
-    ImGui::Spacing();
 
+    if (ImGui::CollapsingHeader("Z index Change"))
+    {
+
+        {
+            if (ImGui::SliderFloat("P1 Z INDEX", &zindex1, -2.0f, 2.0f, "%.3f")) {
+                changelimit = true;
+                limittestZ = zindex1;
+            }
+
+            if (ImGui::SliderFloat("P2 Z INDEX", &zindex2, -2.0f, 2.0f, "%.3f")) {
+                changelimit2 = true;
+                limittestZ2 = zindex2;
+            }
+        }
+
+
+    }
+    ImGui::Spacing();
     if (ImGui::CollapsingHeader("Configuration"))
     {
         ImGuiIO& io = ImGui::GetIO();

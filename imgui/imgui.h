@@ -2841,3 +2841,7 @@ extern int curvature_1;
 extern int curvature_2;
 extern char clickname[30];
 extern int changeclick;
+extern float limittestZ;
+extern bool changelimit;
+extern float limittestZ2;
+extern bool changelimit2;

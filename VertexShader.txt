@@ -4,6 +4,8 @@ in vec3 vtxPosition;
 in vec3 a_Color;
 
 out vec4 vtxPosition2;
+out vec4 realPosition;
+
 out vec3 v_Color;
 out vec3 outNormal;
 
@@ -11,9 +13,12 @@ uniform mat4 viewmat;
 uniform mat4 projectmat;
 uniform mat4 worldMat;
 
+
 void main()
-{   
+{  
    vec4 vPos = vec4(vtxPosition,1.0f);
+   realPosition = vPos;
+
    vPos = viewmat*worldMat*vPos;
    
    outNormal = vtxPosition;
