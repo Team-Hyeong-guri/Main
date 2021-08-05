@@ -52,13 +52,13 @@ double tt2 = 0.0;
 
 int mainWindow, subWindow1, subWindow2, subWindow3, subWindow4;
 
-string filename = "piggybank.obj";
-string filename2 = "piggybank.obj";
+string filename = "YUN MIN JEONG preOp.obj";
+string filename2 = "YUN MIN JEONG postOp.obj";
 
 string change_filename = "cube.obj";    //바꿀 파일 이름
 string mtlpath; //mtl 파일명 저장..
-float scale = 0.3f;
-float scale2 = 0.3f;
+float scale = 0.003f;
+float scale2 = 0.003f;
 
 int subwindow_num = 1;
 
@@ -78,12 +78,12 @@ glm::vec3 first_vec, second_vec;	//calc_sin에서 각에 따른 weight주기 위
 int second_nav_check = 0; //near vertex의 near vertex 탐색 여부
 int color_step = 1, color_step2 = 1;
 float threshold = 0.6;
-int curv_distrib[5] = { 0 }, curv_distrib2[5] = { 0 };
-int change_curv_distrib[5] = { 0 }; // curv_distrube 변경하기위한 용도
-double curv_percent[5] = { 0 }, curv_percent2[5] = { 0 };
+int curv_distrib[10] = { 0 }, curv_distrib2[10] = { 0 };
+int change_curv_distrib[10] = { 0 }; // curv_distrube 변경하기위한 용도
+double curv_percent[10] = { 0 }, curv_percent2[10] = { 0 };
 CpGnuplotU plot(_T("gnuplot\\bin\\wgnuplot.exe"));
 
-float limitZ, limitZ2 = 0.0f;
+float limitZ = -2.0f, limitZ2 = -2.0f;
 float minZ, maxZ;
 
 
@@ -170,6 +170,7 @@ float panRad = 0.f, panRad2 = 0.f;
 float tiltRad = 0.f, tiltRad2 = 0.f;
 float transX = 0.f, transX2 = 0.f;
 float transY = 0.f, transY2 = 0.f;
+float transY_indexZ = 0.f; //z index표시부분이동을 위함
 float transZ = 2.0f, transZ2 = 2.0f;
 float zNear = 0.01f, zNear2 = 0.01f;
 float zFar = 10.0f, zFar2 = 10.0f;
@@ -490,16 +491,31 @@ void calc_color() {
 				aColor_v2.push_back(glm::vec3(1. - vertexInfo[i].calc_curv, 1. - vertexInfo[i].calc_curv, 1. - vertexInfo[i].calc_curv));
 
 			}
-			if (vertexInfo[i].calc_curv >= 0.8) {
-				curv_distrib[4]++;
+			if (vertexInfo[i].calc_curv >= 0.9) {
+				curv_distrib[9]++;
+			}
+			else if (vertexInfo[i].calc_curv >= 0.8) {
+				curv_distrib[8]++;
+			}
+			else if (vertexInfo[i].calc_curv >= 0.7) {
+				curv_distrib[7]++;
 			}
 			else if (vertexInfo[i].calc_curv >= 0.6) {
-				curv_distrib[3]++;
+				curv_distrib[6]++;
+			}
+			else if (vertexInfo[i].calc_curv >= 0.5) {
+				curv_distrib[5]++;
 			}
 			else if (vertexInfo[i].calc_curv >= 0.4) {
-				curv_distrib[2]++;
+				curv_distrib[4]++;
+			}
+			else if (vertexInfo[i].calc_curv >= 0.3) {
+				curv_distrib[3]++;
 			}
 			else if (vertexInfo[i].calc_curv >= 0.2) {
+				curv_distrib[2]++;
+			}
+			else if (vertexInfo[i].calc_curv >= 0.1) {
 				curv_distrib[1]++;
 			}
 			else {
@@ -570,16 +586,31 @@ void calc_color() {
 
 			}
 
-			if (vertexInfo2[i].calc_curv >= 0.8) {
-				curv_distrib2[4]++;
+			if (vertexInfo2[i].calc_curv >= 0.9) {
+				curv_distrib2[9]++;
+			}
+			else if (vertexInfo2[i].calc_curv >= 0.8) {
+				curv_distrib2[8]++;
+			}
+			else if (vertexInfo2[i].calc_curv >= 0.7) {
+				curv_distrib2[7]++;
 			}
 			else if (vertexInfo2[i].calc_curv >= 0.6) {
-				curv_distrib2[3]++;
+				curv_distrib2[6]++;
+			}
+			else if (vertexInfo2[i].calc_curv >= 0.5) {
+				curv_distrib2[5]++;
 			}
 			else if (vertexInfo2[i].calc_curv >= 0.4) {
-				curv_distrib2[2]++;
+				curv_distrib2[4]++;
+			}
+			else if (vertexInfo2[i].calc_curv >= 0.3) {
+				curv_distrib2[3]++;
 			}
 			else if (vertexInfo2[i].calc_curv >= 0.2) {
+				curv_distrib2[2]++;
+			}
+			else if (vertexInfo2[i].calc_curv >= 0.1) {
 				curv_distrib2[1]++;
 			}
 			else {
@@ -592,140 +623,187 @@ void calc_box_color() {
 
 	bColor.clear();
 	int How = HowDrawBox(StartmouseX, StartmouseY, EndmouseX, EndmouseY);
+	float a = abs((EndmouseX - StartmouseX) / 2);
+	float b = abs((EndmouseY - StartmouseY) / 2);
+	float movex = (EndmouseX + StartmouseX) / 2;
+	float movey = (EndmouseY + StartmouseY) / 2;
+	float apow = pow(a, 2.0);
+	float bpow = pow(b, 2.0);
 
 	for (int i = 0; i < vertex_count; i++) {
 		vPos = glm::vec4(obj_vertices[i], 1.);
+		float realY = glm::vec4(obj_vertices[i], 1.).y;
 		vPos = realMat * vPos;
-
-		switch (How)
-		{
-		case 1: //우측 상단으로 선택
-			if ((StartmouseX <= vPos.x) && (vPos.x <= EndmouseX)) {
-				if ((StartmouseY <= vPos.y) && (vPos.y <= EndmouseY)) {
-					bColor.push_back(glm::vec3(0.74 * aColor[i].r, 1.0 * aColor[i].r, 0.));
-					change_curv_distrib[returnCurvscope(vertexInfo[i].calc_curv)]++;
-				}
-				else {
-					bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
-				}
-			}
-			else {
-				bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
-			}
-			break;
-		case 2: //우측 하단으로 선택
-			if ((StartmouseX <= vPos.x) && (vPos.x <= EndmouseX)) {
-				if ((EndmouseY <= vPos.y) && (vPos.y <= StartmouseY)) {
-					bColor.push_back(glm::vec3(0.74 * aColor[i].r, 1.0 * aColor[i].r, 0.));
-					change_curv_distrib[returnCurvscope(vertexInfo[i].calc_curv)]++;
-				}
-				else {
-					bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
-				}
-			}
-			else {
-				bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
-			}
-			break;
-		case 3: //좌측 상단으로 선택
-			if ((EndmouseX <= vPos.x) && (vPos.x <= StartmouseX)) {
-				if ((StartmouseY <= vPos.y) && (vPos.y <= EndmouseY)) {
-					bColor.push_back(glm::vec3(0.74 * aColor[i].r, 1.0 * aColor[i].r, 0.));
-					change_curv_distrib[returnCurvscope(vertexInfo[i].calc_curv)]++;
-				}
-				else {
-					bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
-				}
-			}
-			else {
-				bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
-			}
-			break;
-		case 4: //좌측 하단으로 선택
-			if ((EndmouseX <= vPos.x) && (vPos.x <= StartmouseX)) {
-				if ((EndmouseY <= vPos.y) && (vPos.y <= StartmouseY)) {
-					bColor.push_back(glm::vec3(0.74 * aColor[i].r, 1.0 * aColor[i].r, 0.));
-					change_curv_distrib[returnCurvscope(vertexInfo[i].calc_curv)]++;
-				}
-				else {
-					bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
-				}
-			}
-			else {
-				bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
-			}
-			break;
+		float vPosxpow = pow((vPos.x - movex), 2.0);
+		float vPosypow = pow((vPos.y - movey), 2.0);
+		float lethow = (vPosxpow / apow) + (vPosypow / bpow);
+		bool letZ;
+		if (realY < (-limitZ)) {
+			letZ = true;
 		}
+		else {
+			letZ = false;
+		}
+
+		if (true) {
+			if (lethow <= 1 && letZ) {
+				bColor.push_back(glm::vec3(0.74 * aColor[i].r, 1.0 * aColor[i].r, 0.));
+				change_curv_distrib[returnCurvscope(vertexInfo[i].calc_curv)]++;
+			}
+			else {
+				bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+			}
+		}
+
+		//switch (How)
+		//{
+		//case 1: //우측 상단으로 선택
+
+		//	if ((StartmouseX <= vPos.x) && (vPos.x <= EndmouseX)) {
+		//		if ((StartmouseY <= vPos.y) && (vPos.y <= EndmouseY)) {
+		//			bColor.push_back(glm::vec3(0.74 * aColor[i].r, 1.0 * aColor[i].r, 0.));
+		//			change_curv_distrib[returnCurvscope(vertexInfo[i].calc_curv)]++;
+		//		}
+		//		else {
+		//			bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+		//		}
+		//	}
+		//	else {
+		//		bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+		//	}
+		//	break;
+		//case 2: //우측 하단으로 선택
+		//	if ((StartmouseX <= vPos.x) && (vPos.x <= EndmouseX)) {
+		//		if ((EndmouseY <= vPos.y) && (vPos.y <= StartmouseY)) {
+		//			bColor.push_back(glm::vec3(0.74 * aColor[i].r, 1.0 * aColor[i].r, 0.));
+		//			change_curv_distrib[returnCurvscope(vertexInfo[i].calc_curv)]++;
+		//		}
+		//		else {
+		//			bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+		//		}
+		//	}
+		//	else {
+		//		bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+		//	}
+		//	break;
+		//case 3: //좌측 상단으로 선택
+		//	if ((EndmouseX <= vPos.x) && (vPos.x <= StartmouseX)) {
+		//		if ((StartmouseY <= vPos.y) && (vPos.y <= EndmouseY)) {
+		//			bColor.push_back(glm::vec3(0.74 * aColor[i].r, 1.0 * aColor[i].r, 0.));
+		//			change_curv_distrib[returnCurvscope(vertexInfo[i].calc_curv)]++;
+		//		}
+		//		else {
+		//			bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+		//		}
+		//	}
+		//	else {
+		//		bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+		//	}
+		//	break;
+		//case 4: //좌측 하단으로 선택
+		//	if ((EndmouseX <= vPos.x) && (vPos.x <= StartmouseX)) {
+		//		if ((EndmouseY <= vPos.y) && (vPos.y <= StartmouseY)) {
+		//			bColor.push_back(glm::vec3(0.74 * aColor[i].r, 1.0 * aColor[i].r, 0.));
+		//			change_curv_distrib[returnCurvscope(vertexInfo[i].calc_curv)]++;
+		//		}
+		//		else {
+		//			bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+		//		}
+		//	}
+		//	else {
+		//		bColor.push_back(glm::vec3(aColor[i].r, aColor[i].g, aColor[i].b));
+		//	}
+		//	break;
+		//}
 	}
 }
 void calc_box_color2() {
 
 	bColor2.clear();
 	int How = HowDrawBox(StartmouseX2, StartmouseY2, EndmouseX2, EndmouseY2);
+	float a = abs((EndmouseX2 - StartmouseX2) / 2);
+	float b = abs((EndmouseY2 - StartmouseY2) / 2);
+	float movex = (EndmouseX2 + StartmouseX2) / 2;
+	float movey = (EndmouseY2 + StartmouseY2) / 2;
+	float apow = pow(a, 2.0);
+	float bpow = pow(b, 2.0);
 
 	for (int i = 0; i < vertex_count2; i++) {
 		vPos2 = glm::vec4(obj_vertices2[i], 1.);
 		vPos2 = realMat2 * vPos2;
+		float vPosxpow = pow((vPos2.x - movex), 2.0);
+		float vPosypow = pow((vPos2.y - movey), 2.0);
+		float lethow = (vPosxpow / apow) + (vPosypow / bpow);
 
-		switch (How)
-		{
-		case 1: //우측 상단으로 선택
-			if ((StartmouseX2 <= vPos2.x) && (vPos2.x <= EndmouseX2)) {
-				if ((StartmouseY2 <= vPos2.y) && (vPos2.y <= EndmouseY2)) {
-					bColor2.push_back(glm::vec3(0.74 * aColor2[i].r, 1.0 * aColor2[i].r, 0.));
-					change_curv_distrib[returnCurvscope(vertexInfo2[i].calc_curv)]++;
-				}
-				else {
-					bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
-				}
+		if (true) {
+			if (lethow <= 1) {
+				bColor2.push_back(glm::vec3(0.74 * aColor2[i].r, 1.0 * aColor2[i].r, 0.));
+				change_curv_distrib[returnCurvscope(vertexInfo2[i].calc_curv)]++;
 			}
 			else {
 				bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
 			}
-			break;
-		case 2: //우측 하단으로 선택
-			if ((StartmouseX2 <= vPos2.x) && (vPos2.x <= EndmouseX2)) {
-				if ((EndmouseY2 <= vPos2.y) && (vPos2.y <= StartmouseY2)) {
-					bColor2.push_back(glm::vec3(0.74 * aColor2[i].r, 1.0 * aColor2[i].r, 0.));
-					change_curv_distrib[returnCurvscope(vertexInfo2[i].calc_curv)]++;
-				}
-				else {
-					bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
-				}
-			}
-			else {
-				bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
-			}
-			break;
-		case 3: //좌측 상단으로 선택
-			if ((EndmouseX2 <= vPos2.x) && (vPos2.x <= StartmouseX2)) {
-				if ((StartmouseY2 <= vPos2.y) && (vPos2.y <= EndmouseY2)) {
-					bColor2.push_back(glm::vec3(0.74 * aColor2[i].r, 1.0 * aColor2[i].r, 0.));
-					change_curv_distrib[returnCurvscope(vertexInfo2[i].calc_curv)]++;
-				}
-				else {
-					bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
-				}
-			}
-			else {
-				bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
-			}
-			break;
-		case 4: //좌측 하단으로 선택
-			if ((EndmouseX2 <= vPos2.x) && (vPos2.x <= StartmouseX2)) {
-				if ((EndmouseY2 <= vPos2.y) && (vPos2.y <= StartmouseY2)) {
-					bColor2.push_back(glm::vec3(0.74 * aColor2[i].r, 1.0 * aColor2[i].r, 0.));
-					change_curv_distrib[returnCurvscope(vertexInfo2[i].calc_curv)]++;
-				}
-				else {
-					bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
-				}
-			}
-			else {
-				bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
-			}
-			break;
 		}
+
+		//switch (How)
+		//{
+		//case 1: //우측 상단으로 선택
+		//	if ((StartmouseX2 <= vPos2.x) && (vPos2.x <= EndmouseX2)) {
+		//		if ((StartmouseY2 <= vPos2.y) && (vPos2.y <= EndmouseY2)) {
+		//			bColor2.push_back(glm::vec3(0.74 * aColor2[i].r, 1.0 * aColor2[i].r, 0.));
+		//			change_curv_distrib[returnCurvscope(vertexInfo2[i].calc_curv)]++;
+		//		}
+		//		else {
+		//			bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+		//		}
+		//	}
+		//	else {
+		//		bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+		//	}
+		//	break;
+		//case 2: //우측 하단으로 선택
+		//	if ((StartmouseX2 <= vPos2.x) && (vPos2.x <= EndmouseX2)) {
+		//		if ((EndmouseY2 <= vPos2.y) && (vPos2.y <= StartmouseY2)) {
+		//			bColor2.push_back(glm::vec3(0.74 * aColor2[i].r, 1.0 * aColor2[i].r, 0.));
+		//			change_curv_distrib[returnCurvscope(vertexInfo2[i].calc_curv)]++;
+		//		}
+		//		else {
+		//			bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+		//		}
+		//	}
+		//	else {
+		//		bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+		//	}
+		//	break;
+		//case 3: //좌측 상단으로 선택
+		//	if ((EndmouseX2 <= vPos2.x) && (vPos2.x <= StartmouseX2)) {
+		//		if ((StartmouseY2 <= vPos2.y) && (vPos2.y <= EndmouseY2)) {
+		//			bColor2.push_back(glm::vec3(0.74 * aColor2[i].r, 1.0 * aColor2[i].r, 0.));
+		//			change_curv_distrib[returnCurvscope(vertexInfo2[i].calc_curv)]++;
+		//		}
+		//		else {
+		//			bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+		//		}
+		//	}
+		//	else {
+		//		bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+		//	}
+		//	break;
+		//case 4: //좌측 하단으로 선택
+		//	if ((EndmouseX2 <= vPos2.x) && (vPos2.x <= StartmouseX2)) {
+		//		if ((EndmouseY2 <= vPos2.y) && (vPos2.y <= StartmouseY2)) {
+		//			bColor2.push_back(glm::vec3(0.74 * aColor2[i].r, 1.0 * aColor2[i].r, 0.));
+		//			change_curv_distrib[returnCurvscope(vertexInfo2[i].calc_curv)]++;
+		//		}
+		//		else {
+		//			bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+		//		}
+		//	}
+		//	else {
+		//		bColor2.push_back(glm::vec3(aColor2[i].r, aColor2[i].g, aColor2[i].b));
+		//	}
+		//	break;
+		//}
 	}
 }
 
@@ -1327,7 +1405,7 @@ void updateViewmat() {
 	realMat2 = realMat;
 
 	//0711 추가
-	transmat4 = glm::translate(glm::vec3(transX, transY - 1, transZ));
+	transmat4 = glm::translate(glm::vec3(transX, transY + transY_indexZ, transZ));
 	viewmat4 = glm::inverse(transmat4) * glm::transpose(tiltmat4);
 
 }
@@ -1530,13 +1608,32 @@ void boxto_change_graph() {
 	}
 
 	//ㅡㅡㅡㅡㅡ왼쪽 화면 계산 cout
+	cout << "------------------------------------------왼쪽-----------------------------------------------------------" << endl;
+	cout << "\t0.0~0.1\t\t0.1~0.2\t\t0.2~0.3\t\t0.3~0.4\t\t0.4~0.5\t\t0.5~0.6\t\t0.6~0.7\t\t0.7~0.8\t\t0.8~0.9\t\t0.9~1.0\t\ttotal" << endl;
+	cout << "count\t" << change_curv_distrib[0]
+		<< "\t\t" << change_curv_distrib[1]
+		<< "\t\t" << change_curv_distrib[2]
+		<< "\t\t" << change_curv_distrib[3]
+		<< "\t\t" << change_curv_distrib[4]
+		<< "\t\t" << change_curv_distrib[5]
+		<< "\t\t" << change_curv_distrib[6]
+		<< "\t\t" << change_curv_distrib[7]
+		<< "\t\t" << change_curv_distrib[8]
+		<< "\t\t" << change_curv_distrib[9]
 
-	cout << "\t0.0~0.2\t\t0.2~0.4\t\t0.4~0.6\t\t0.6~0.8\t\t0.8~1.0\t\ttotal" << endl;
-	cout << "count\t" << change_curv_distrib[0] << "\t\t" << change_curv_distrib[1] << "\t\t" << change_curv_distrib[2] << "\t\t" << change_curv_distrib[3] << "\t\t" <<
-		change_curv_distrib[4] << "\t\t" << sumofvertex << endl;
-	cout << "percent\t" << curv_percent[0] << "\t" << curv_percent[1] << "\t" << curv_percent[2] << "\t" <<
-		curv_percent[3] << "\t" << curv_percent[4] << endl << endl;
+		<< "\t\t" << sumofvertex << endl;
+	cout << "percent\t" << curv_percent[0]
+		<< "\t" << curv_percent[1]
+		<< "\t" << curv_percent[2]
+		<< "\t" << curv_percent[3]
+		<< "\t" << curv_percent[4]
+		<< "\t" << curv_percent[5]
+		<< "\t" << curv_percent[6]
+		<< "\t" << curv_percent[7]
+		<< "\t" << curv_percent[8]
+		<< "\t" << curv_percent[9]
 
+		<< endl << endl;
 
 	for (int i = 0; i < numOfElements; i++) {
 		change_curv_distrib[i] = 0;
@@ -1554,28 +1651,64 @@ void boxto_change_graph2() {
 	}
 
 	//ㅡㅡㅡㅡㅡ오른쪽 화면 계산 cout
+	cout << "------------------------------------------오른쪾-----------------------------------------------------------"<<endl;
+	cout << "\t0.0~0.1\t\t0.1~0.2\t\t0.2~0.3\t\t0.3~0.4\t\t0.4~0.5\t\t0.5~0.6\t\t0.6~0.7\t\t0.7~0.8\t\t0.8~0.9\t\t0.9~1.0\t\t1.0\t\ttotal" << endl;
+	cout << "count\t" << change_curv_distrib[0]
+		<< "\t\t" << change_curv_distrib[1]
+		<< "\t\t" << change_curv_distrib[2]
+		<< "\t\t" << change_curv_distrib[3]
+		<< "\t\t" << change_curv_distrib[4]
+		<< "\t\t" << change_curv_distrib[5]
+		<< "\t\t" << change_curv_distrib[6]
+		<< "\t\t" << change_curv_distrib[7]
+		<< "\t\t" << change_curv_distrib[8]
+		<< "\t\t" << change_curv_distrib[9]
 
-	cout << "\t0.0~0.2\t\t0.2~0.4\t\t0.4~0.6\t\t0.6~0.8\t\t0.8~1.0\t\ttotal" << endl;
-	cout << "count\t" << change_curv_distrib[0] << "\t\t" << change_curv_distrib[1] << "\t\t" << change_curv_distrib[2] << "\t\t" << change_curv_distrib[3] << "\t\t" <<
-		change_curv_distrib[4] << "\t\t" << sumofvertex << endl;
-	cout << "percent\t" << curv_percent2[0] << "\t" << curv_percent2[1] << "\t" << curv_percent2[2] << "\t" <<
-		curv_percent2[3] << "\t" << curv_percent2[4] << endl << endl;
+		<< "\t\t" << sumofvertex << endl;
+	cout << "percent\t" << curv_percent2[0]
+		<< "\t" << curv_percent2[1] 
+		<< "\t" << curv_percent2[2] 
+		<< "\t" << curv_percent2[3] 
+		<< "\t" << curv_percent2[4] 
+		<< "\t" << curv_percent2[5] 
+		<< "\t" << curv_percent2[6] 
+		<< "\t" << curv_percent2[7]
+		<< "\t" << curv_percent2[8] 
+		<< "\t" << curv_percent2[9] 
+
+		<< endl << endl;
 
 	for (int i = 0; i < numOfElements; i++) {
 		change_curv_distrib[i] = 0;
 	}
 }
 int returnCurvscope(double calc_curv) {
-	if (calc_curv >= 0.8) {
-		return 4;
+	if (calc_curv >= 0.9) {
+		return 9;
+	}
+	else if (calc_curv >= 0.8) {
+		return 8;
+	}
+	else if (calc_curv >= 0.7) {
+		return 7;
 	}
 	else if (calc_curv >= 0.6) {
+		return 6;
+	}
+	else if (calc_curv >= 0.5) {
+		return 5;
+	}
+
+	else if (calc_curv >= 0.4) {
+		return 4;
+	}
+	else if (calc_curv >= 0.3) {
 		return 3;
 	}
-	else if (calc_curv >= 0.4) {
+	else if (calc_curv >= 0.2) {
 		return 2;
 	}
-	else if (calc_curv >= 0.2) {
+	else if (calc_curv >= 0.1) {
 		return 1;
 	}
 	else {
@@ -1960,6 +2093,14 @@ void myKeyboard(unsigned char key, int x, int y) {
 		break;
 	case 's':   //ped down
 		transY -= 0.1f;
+		updateViewmat();
+		break;
+	case 'i':
+		transY_indexZ += 0.1f;
+		updateViewmat();
+		break;
+	case 'k':
+		transY_indexZ -= 0.1f;
 		updateViewmat();
 		break;
 	case 'y':   //zoom in
@@ -2375,7 +2516,7 @@ void myMouseClick(GLint Button, GLint State, int x, int y) {
 		calc_box_color2();
 		boxto_change_graph2();
 
-		show_graph(curv_percent, curv_percent2, 5, &plot);
+		show_graph(curv_percent, curv_percent2, 10, &plot);
 
 		//추가
 
@@ -2430,7 +2571,7 @@ void myMouseClick(GLint Button, GLint State, int x, int y) {
 		calc_box_color();
 		boxto_change_graph();
 		glutPostRedisplay();
-		show_graph(curv_percent, curv_percent2, 5, &plot);
+		show_graph(curv_percent, curv_percent2, 10, &plot);
 	}
 }
 void myMouseClick2(GLint Button, GLint State, int x, int y) {
@@ -2470,7 +2611,7 @@ void myMouseClick2(GLint Button, GLint State, int x, int y) {
 		calc_box_color2();
 		boxto_change_graph2();
 
-		show_graph(curv_percent, curv_percent2, 5, &plot);
+		show_graph(curv_percent, curv_percent2, 10, &plot);
 
 	}
 	if ((Button == GLUT_LEFT_BUTTON && State == GLUT_DOWN) && Holding == TRUE && BoxHolding == TRUE) {
@@ -2520,7 +2661,7 @@ void myMouseClick2(GLint Button, GLint State, int x, int y) {
 		calc_box_color2();
 		boxto_change_graph2();
 		glutPostRedisplay();
-		show_graph(curv_percent, curv_percent2, 5, &plot);
+		show_graph(curv_percent, curv_percent2, 10, &plot);
 	}
 }
 void myMouseDrag(int x, int y) {
@@ -3025,8 +3166,8 @@ void init(string file_name, float obj_scale)
 		viewmat = glm::transpose(tiltmat) * glm::transpose(rotmat) * glm::inverse(transmat);
 
 
-		tiltmat4 = glm::rotate(-90 * TO_RADIAN, glm::vec3(1.0f, 0, 0));
-		transmat4 = glm::translate(glm::vec3(transX, transY - 1, transZ));
+		tiltmat4 = glm::rotate(TO_RADIAN, glm::vec3(1.0f, 0, 0));
+		transmat4 = glm::translate(glm::vec3(transX, transY, transZ));
 		viewmat4 = glm::inverse(transmat4) * glm::transpose(tiltmat4);
 
 		GLuint viewID = glGetUniformLocation(programID, "viewmat");
@@ -3102,8 +3243,8 @@ void init(string file_name, float obj_scale)
 		transmat = glm::translate(glm::vec3(transX, transY, transZ));
 		viewmat = glm::transpose(tiltmat) * glm::transpose(rotmat) * glm::inverse(transmat);
 
-		tiltmat4 = glm::rotate(-90 * TO_RADIAN, glm::vec3(1.0f, 0, 0));
-		transmat4 = glm::translate(glm::vec3(transX, transY - 1, transZ));
+		tiltmat4 = glm::rotate(TO_RADIAN, glm::vec3(1.0f, 0, 0));
+		transmat4 = glm::translate(glm::vec3(transX, transY, transZ));
 		viewmat4 = glm::inverse(transmat4) * glm::transpose(tiltmat4);
 
 		GLuint viewID = glGetUniformLocation(programID, "viewmat");
@@ -3186,20 +3327,61 @@ int main(int argc, char** argv)
 
 
 
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < 10; i++) {
 		curv_percent[i] = curv_distrib[i] / (float)vertex_count;
 		curv_percent2[i] = curv_distrib2[i] / (float)vertex_count2;
 	}
-	cout << "\t0.0~0.2\t\t0.2~0.4\t\t0.4~0.6\t\t0.6~0.8\t\t0.8~1.0\t\ttotal" << endl;
-	cout << "count\t" << curv_distrib[0] << "\t\t" << curv_distrib[1] << "\t\t" << curv_distrib[2] << "\t\t" << curv_distrib[3] << "\t\t" <<
-		curv_distrib[4] << "\t\t" << vertex_count << endl;
-	cout << "percent\t" << curv_percent[0] << "\t" << curv_percent[1] << "\t" << curv_percent[2] << "\t" <<
-		curv_percent[3] << "\t" << curv_percent[4] << endl << endl;
+	cout << "\t0.0~0.1\t\t0.1~0.2\t\t0.2~0.3\t\t0.3~0.4\t\t0.4~0.5\t\t0.5~0.6\t\t0.6~0.7\t\t0.7~0.8\t\t0.8~0.9\t\t0.9~1.0\t\ttotal" << endl;
+	cout << "count\t" << curv_distrib[0]
+		<< "\t\t" << curv_distrib[1]
+		<< "\t\t" << curv_distrib[2]
+		<< "\t\t" << curv_distrib[3]
+		<< "\t\t" << curv_distrib[4]
+		<< "\t\t" << curv_distrib[5]
+		<< "\t\t" << curv_distrib[6]
+		<< "\t\t" << curv_distrib[7]
+		<< "\t\t" << curv_distrib[8]
+		<< "\t\t" << curv_distrib[9]
 
-	cout << "count\t" << curv_distrib2[0] << "\t\t" << curv_distrib2[1] << "\t\t" << curv_distrib2[2] << "\t\t" << curv_distrib2[3] << "\t\t" <<
-		curv_distrib2[4] << "\t\t" << vertex_count2 << endl;
-	cout << "percent\t" << curv_percent2[0] << "\t" << curv_percent2[1] << "\t" << curv_percent2[2] << "\t" <<
-		curv_percent2[3] << "\t" << curv_percent2[4] << endl << endl;
+		<< "\t\t" << vertex_count << endl;
+	cout << "percent\t" <<
+		curv_percent[0] << "\t" <<
+		curv_percent[1] << "\t" <<
+		curv_percent[2] << "\t" <<
+		curv_percent[3] << "\t" <<
+		curv_percent[4] << "\t" <<
+		curv_percent[5] << "\t" <<
+		curv_percent[6] << "\t" <<
+		curv_percent[7] << "\t" <<
+		curv_percent[8] << "\t" <<
+		curv_percent[9] << "\t" <<
+
+		endl << endl;
+
+	cout << "count\t" << curv_distrib2[0]
+		<< "\t\t" << curv_distrib2[1]
+		<< "\t\t" << curv_distrib2[2]
+		<< "\t\t" << curv_distrib2[3]
+		<< "\t\t" << curv_distrib2[4]
+		<< "\t\t" << curv_distrib2[5]
+		<< "\t\t" << curv_distrib2[6]
+		<< "\t\t" << curv_distrib2[7]
+		<< "\t\t" << curv_distrib2[8]
+		<< "\t\t" << curv_distrib2[9]
+
+		<< "\t\t" << vertex_count2 << endl;
+	cout << "percent\t" << curv_percent2[0]
+		<< "\t" << curv_percent2[1]
+		<< "\t" << curv_percent2[2]
+		<< "\t" << curv_percent2[3]
+		<< "\t" << curv_percent2[4]
+		<< "\t" << curv_percent2[5]
+		<< "\t" << curv_percent2[6]
+		<< "\t" << curv_percent2[7]
+		<< "\t" << curv_percent2[8]
+		<< "\t" << curv_percent2[9]
+
+		<< endl << endl;
 
 	int numOfElements = sizeof(curv_percent) / sizeof(double);
 
