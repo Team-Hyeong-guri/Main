@@ -196,8 +196,8 @@ float limittestZ2 = 0.0f;
 bool changelimit = false;
 bool changelimit2 = false;
 char clickname[30];
-float zindex1 = 0.0f;
-float zindex2 = 0.0f;
+float zindex1 = -2.0f;
+float zindex2 = -2.0f;
 
 // Helper to display a little (?) mark which shows a tooltip when hovered.
 // In your own code you may want to display an actual icon if you are using a merged icon fonts (see docs/FONTS.md)
