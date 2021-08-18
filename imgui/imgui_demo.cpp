@@ -414,6 +414,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
                 //std::vector<std::string> filelist_paths;
                 //int pathnum; //파일 개수
                 //int path_count = 0;
+           
 
                 //namespace fs = std::filesystem;
                 //for (auto& p : fs::recursive_directory_iterator(dir)) {
@@ -421,47 +422,32 @@ void ImGui::ShowDemoWindow(bool* p_open)
                 //}
                 //
                 //pathnum = filelist_paths.size();
-                //char* items1[1];
 
                 //for (auto str : filelist_paths) {
                 //    int slashindex;
                 //    slashindex = str.find("/");
                 //    str = str.substr(slashindex + 1);
 
-                //    std::vector<char> writable(str.begin(), str.end());
-                //    writable.push_back('\0');
-                //    char* ptr = &writable[0];
-
-                //    items1[path_count] = "AAAA";
-                //    std:: cout << items1[path_count];
-                //    path_count++;
-
+                //    std::cout << str << std::endl;
+                //    
                 //}
 
 
-                const char* items[] = { "BAE YONG KYU postOp.obj",
-                    "BAE YONG KYU preOp.obj", 
-                    "CHUN CHONG HO.obj", 
-                    "EOM GYEONG HO preOp.obj", 
-                    "EOM KYEONG HO postOp.obj", 
-                    "HAN JEONG SUK.obj", 
-                    "JEONG JI MIN.obj", 
-                    "JEONG UN KUK postOp.obj", 
-                    "JEONG UN KUK preOp.obj", 
-                    "JU IN KI postOp.obj", 
-                    "JU IN KI preOp.obj", 
-                    "JU YEONG SEOK.obj", 
-                    "KANG JI SEONG postOp.obj", 
-                    "KANG JI SEONG preOp.obj"
-
+                const char* items[] = { "BAE YONG KYU",
+                    "JEONG UN KUK",
+                    "JU IN KI",
+                    "KANG JI SEONG",
                 };
+                
                 static int item_current_idx = 0; // Here we store our selection data as an index.
 
                 for (int n = 0; n < IM_ARRAYSIZE(items); n++)
                 {
                     const bool is_selected = (item_current_idx == n);
-                    if (ImGui::Selectable(items[n], is_selected))
+                    if (ImGui::Selectable(items[n], is_selected)) {
                         item_current_idx = n;
+                        std::cout << items[item_current_idx] << std::endl;
+                    }
 
                     // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                     if (is_selected)
