@@ -22,6 +22,8 @@
 #include "pGNUPlotU.h"
 #include "StdAfx.h"
 #include <math.h>
+#include <filesystem>
+
 
 #ifdef _MSC_VER
 #pragma warning (disable: 4505) // unreferenced local function has been removed
@@ -52,13 +54,15 @@ double tt2 = 0.0;
 
 int mainWindow, subWindow1, subWindow2, subWindow3, subWindow4;
 
-string filename = "YUN MIN JEONG preOp.obj";
-string filename2 = "YUN MIN JEONG postOp.obj";
+string filename = "piggybank.obj";
+string filename2 = "piggybank.obj";
 
 string change_filename = "cube.obj";    //바꿀 파일 이름
 string mtlpath; //mtl 파일명 저장..
-float scale = 0.003f;
-float scale2 = 0.003f;
+
+int changetype = 1; //sample = 1, 환자 = 2
+float scale = 0.3f;
+float scale2 = 0.3f;
 
 int subwindow_num = 1;
 
@@ -198,6 +202,7 @@ GLuint vbo[2];
 GLuint vao[2];
 unsigned int ebo;
 
+void filestreaminit(void); // 파일 리스트 읽는 함수
 int returnCurvscope(double calc_curv); //박스 선택 후 curvdistrib 정보 변경.
 void renderScene(void);
 void renderSceneNew();
@@ -212,12 +217,25 @@ void exit_graph(CpGnuplotU* plot);
 void SelectScale(); //  Scale 정해주는 함수 : 추후 구현 예정
 void changeFile(char* file_str);
 void changeFile2(char* file_str);
+void changeFile3(char* file_str);
+void changeFile4(char* file_str);
 void parseMtllib(string line); //mtl 파일명 저장.
 void onReadMTLFile(string path);
 void parseKd(string line); // mtl파일의 Kd 저장.
 void parseKa(string line); // mtl파일의 ka 저장.
 void parseKs(string line); // mtl파일의 ks 저장.
 int HowDrawBox(float start_X, float start_Y, float End_X, float End_Y);
+
+void SelectScale() {
+	if (changetype == 1) {
+		scale = 0.003f;
+		scale2 = 0.003f;
+	}
+	else if (changetype == 2) {
+		scale = 0.3f;
+		scale2 = 0.3f;
+	}
+}
 void clear_subwindow_1() {
 	obj_vertices.clear();
 	vertexIndices.clear();
@@ -1532,6 +1550,10 @@ void renderSceneNew()
 	glDepthFunc(GL_LESS);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	if (changeclick == 1) {
+		renderSceneAll();
+	}
+
 	if (changelimit2) {
 		limitZ2 = limittestZ2;
 		changelimit2 = false;
@@ -1890,7 +1912,7 @@ void renderScene3(void) {
 
 
 	if (changeclick == 1) {
-		changeFile(clickname);
+		changeFile3(clickname);
 	}
 
 	glUseProgram(programID);
@@ -1944,7 +1966,6 @@ void renderScene3(void) {
 	//Double buffer
 	glutSwapBuffers();
 }
-
 void renderScene4(void) {
 	glutSetWindow(subWindow4);
 	//Clear all pixels
@@ -1955,7 +1976,8 @@ void renderScene4(void) {
 	//define the size of point and draw a point.
 
 	if (changeclick == 1) {
-		changeFile2(clickname);
+		changeFile4(clickname);
+		changeclick = 0;
 	}
 
 	glUseProgram(programID);
@@ -2225,27 +2247,6 @@ void changeFile(char* file_str) {
 	glVertexAttribPointer(Color, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
 	glEnableVertexAttribArray(Color);
 
-	//clear_subwindow_2();
-	//loadObj2(filename, scale);
-	//calc_color();
-
-	//glBindVertexArray(vao[0]);
-
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * vertexIndices2.size(), vertexIndices2.data(), GL_STATIC_DRAW);
-
-	//glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * obj_vertices2.size(), obj_vertices2.data(), GL_STATIC_DRAW);
-	//glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
-	//glEnableVertexAttribArray(vtxPosition);
-
-	//glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor2.size(), aColor2.data(), GL_STATIC_DRAW);
-	//glVertexAttribPointer(Color, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
-	//glEnableVertexAttribArray(Color);
-
-	changeclick = 0;
-
 }
 void changeFile2(char* file_str) {
 	GLint vtxPosition = glGetAttribLocation(programID, "vtxPosition");
@@ -2273,7 +2274,49 @@ void changeFile2(char* file_str) {
 	glVertexAttribPointer(Color, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
 	glEnableVertexAttribArray(Color);
 
-	changeclick = 0;
+
+}
+void changeFile3(char* file_str) {
+	GLint vtxPosition = glGetAttribLocation(programID, "vtxPosition");
+	GLint Color = glGetAttribLocation(programID, "a_Color");
+
+	filename = file_str;
+
+	glBindVertexArray(vao[0]);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * vertexIndices.size(), vertexIndices.data(), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * obj_vertices.size(), obj_vertices.data(), GL_STATIC_DRAW);
+	glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+	glEnableVertexAttribArray(vtxPosition);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor.size(), aColor.data(), GL_STATIC_DRAW);
+	glVertexAttribPointer(Color, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+	glEnableVertexAttribArray(Color);
+}
+void changeFile4(char* file_str) {
+	GLint vtxPosition = glGetAttribLocation(programID, "vtxPosition");
+	GLint Color = glGetAttribLocation(programID, "a_Color");
+
+	filename = file_str;
+
+	glBindVertexArray(vao[0]);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * vertexIndices2.size(), vertexIndices2.data(), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * obj_vertices2.size(), obj_vertices2.data(), GL_STATIC_DRAW);
+	glVertexAttribPointer(vtxPosition, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+	glEnableVertexAttribArray(vtxPosition);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * aColor2.size(), aColor2.data(), GL_STATIC_DRAW);
+	glVertexAttribPointer(Color, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (GLvoid*)(0));
+	glEnableVertexAttribArray(Color);
 
 }
 void myKeyboard2(unsigned char key, int x, int y) {
@@ -2927,13 +2970,13 @@ void init(string file_name, float obj_scale)
 
 		start_time = clock();
 		loadObj2(file_name, obj_scale);
+		calc_color();
 		end_time = clock();
 
 		double total_t = (double)(end_time - start_time);
 		cout << "Time : " << total_t / 1000. << endl;
 
 		cout << endl;
-		calc_color();
 
 
 		programID = LoadShaders("VertexShader.txt", "FragmentShader.txt");
@@ -3028,13 +3071,11 @@ void init(string file_name, float obj_scale)
 
 		start_time = clock();
 		loadObj2(file_name, obj_scale);
+		calc_color();
 		end_time = clock();
 
 		double total_t = (double)(end_time - start_time);
 		cout << "Time : " << total_t / 1000. << endl;
-
-
-		calc_color();
 
 
 		programID = LoadShaders("VertexShader.txt", "FragmentShader.txt");
@@ -3114,7 +3155,7 @@ void init(string file_name, float obj_scale)
 
 		//glVertexAttrib3f(glGetAttribLocation(programID2, "a_Color"), 1, 0, 0);
 	}
-	else if (subwindow_num == 3) {                                       //subwindow 2
+	else if (subwindow_num == 3) {                                       //subwindow 3
 		cout << endl << "========== SubWindow 3 ==========" << endl;
 		//initilize the glew and check the errors.
 		GLenum res = glewInit();
@@ -3191,7 +3232,7 @@ void init(string file_name, float obj_scale)
 		glUniform1f(glGetUniformLocation(programID, "limitZ"), limitZ);
 	}
 
-	else if (subwindow_num == 4) {                                       //subwindow 2
+	else if (subwindow_num == 4) {                                       //subwindow 4
 
 		cout << endl << "========== SubWindow 4    ==========" << endl;
 		//initilize the glew and check the errors.
@@ -3270,10 +3311,33 @@ void init(string file_name, float obj_scale)
 
 
 }
+void filestreaminit() {
+	//-------------------------FileStream-----------------------------
+	std::string dir = "patient/";
+	std::vector<std::string> filelist_paths;
+	int pathnum = 0; //파일 개수
+	int path_count = 0;
+
+	namespace fs = std::filesystem;
+	for (auto& p : fs::recursive_directory_iterator(dir)) {
+	 filelist_paths.push_back(p.path().string());
+	}
+
+	pathnum = filelist_paths.size();
+
+	for (auto str : filelist_paths) {
+		int slashindex;
+		slashindex = str.find("/");
+		str = str.substr(slashindex + 1);
+	
+		std::cout << str << std::endl;
+    
+	}
+
+}
 int main(int argc, char** argv)
 {
-	int dd = 0;
-
+	filestreaminit();
 
 	// Create GLUT window
 	glutInit(&argc, argv);
